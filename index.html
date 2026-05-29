@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شطرنج  </title>
+    <title>شطرنج  -</title>
     
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -57,7 +57,6 @@
 
         #game-area { display: none; }
         
-        /* تعديل هنا: تكبير الرقعة لـ 650 بكسل بدلاً من 500 */
         .board-container { width: 100%; max-width: 650px; margin: 0 auto; position: relative; cursor: pointer; }
         
         .status-box { text-align: center; font-size: 1.2em; font-weight: bold; margin: 15px 0; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 8px; }
@@ -66,13 +65,11 @@
         .legal-move-hint { position: absolute; width: 30%; height: 30%; background: rgba(0, 0, 0, 0.3); border-radius: 50%; top: 35%; left: 35%; pointer-events: none; z-index: 10; }
         body.dark-mode .legal-move-hint { background: rgba(255, 255, 255, 0.4); }
         
-        /* ألوان التظليل (للقطعة المختارة ولآخر حركة) */
         .highlight-active { background-color: rgba(255, 255, 51, 0.6) !important; }
-        .highlight-last { background-color: rgba(155, 199, 0, 0.5) !important; } /* لون آخر حركة */
+        .highlight-last { background-color: rgba(155, 199, 0, 0.5) !important; } 
         
         .spectator-badge { background: #ff9800; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.9em; display: none; }
 
-        /* تعديل عرض بار اللاعبين عشان يبقى بحجم الرقعة الجديد */
         .player-bar { display: flex; align-items: center; justify-content: space-between; background: var(--panel-bg); padding: 10px; border-radius: 8px; margin: 10px auto; border: 1px solid var(--border-color); max-width: 650px; flex-wrap: wrap; }
         .player-name { font-weight: bold; font-size: 1.1em; }
         .timer-box { background: #2b2b2b; color: #f1f1f1; font-family: monospace; font-size: 1.4em; padding: 5px 15px; border-radius: 6px; font-weight: bold; transition: all 0.3s; }
@@ -102,7 +99,9 @@
         .chat-input-area button { margin: 0; border-radius: 0; padding: 12px 20px; border-right: 1px solid var(--border-color); }
     </style>
 </head>
-<body class="dark-mode"> <div class="container">
+<body class="dark-mode">
+
+<div class="container">
     <div class="header">
         <h2>شطرنج أونلاين ♟️</h2>
         <div>
@@ -269,6 +268,18 @@
             </div>
         </div>
     </div>
+
+    <footer style="text-align: center; margin-top: 40px; padding-bottom: 20px;">
+        <p style="font-size: 22px; font-weight: bold;">© 2027 _ 2026 ENG OMAR All Rights Reserved.</p>
+        <p>اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى سَيِّدِنَا مُحَمَّدٍ ﷺ</p>
+        
+        <div style="margin-top: 20px;">
+            <a href="https://t.me/livein3327" target="_blank" style="display: inline-block; background-color: #0088cc; color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-size: 18px; font-weight: bold; border: 2px solid #4caac9; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: all 0.3s ease;">
+                💬 تواصل مع المبرمج
+            </a>
+        </div>
+    </footer>
+
 </div>
 
 <div id="promotionModal">
@@ -311,7 +322,7 @@
     let dbRef = null, isSpectator = false, mySpectatorId = null;
     let roomPlayers = {}, roomData = null; 
     let gameEnded = false, pendingPromotionMove = null, sourceSquare = null, timeoutTriggered = false;
-    let fenHistory = ['start'], currentHistoryIndex = 0, isViewingHistory = false; // الإضافة الجديدة للحركات
+    let fenHistory = ['start'], currentHistoryIndex = 0, isViewingHistory = false;
     
     let isBotMode = false;
     let botDifficulty = 'easy';
@@ -413,8 +424,8 @@
         isBotMode = false; const tc = $('#timeControlSelect').val(); const initialSeconds = parseInt(tc.split('+')[0]);
         currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
         dbRef = db.ref('rooms/' + currentRoomId);
-        dbRef.set({ fen: 'start', turn: 'w', players: { [myColor]: myName }, timeControl: tc, wTime: initialSeconds, bTime: initialSeconds, timerStarted: false, lastMoveAt: firebase.database.ServerValue.TIMESTAMP });
-        dbRef.child('players/' + myColor).onDisconnect().remove();
+        dbRef.set({ fen: 'start', turn: 'w', players: { [myColor]: myName }, status: { [myColor]: 'online' }, timeControl: tc, wTime: initialSeconds, bTime: initialSeconds, timerStarted: false, lastMoveAt: firebase.database.ServerValue.TIMESTAMP });
+        dbRef.child('status/' + myColor).onDisconnect().set('offline');
         enterGameRoom();
     });
 
@@ -426,25 +437,30 @@
             if(snapshot.exists()) {
                 const data = snapshot.val(); currentRoomId = roomId; dbRef = db.ref('rooms/' + currentRoomId);
 
-                // --- حل مشكلة تعارض الألوان ---
                 const selectedColor = $('#playerColorOnline').val();
+                const isOffline = (c) => (data.status && data.status[c] === 'offline');
+
                 if (!data.players) {
                     myColor = selectedColor;
-                } else if (data.players[selectedColor] === undefined) {
-                    myColor = selectedColor; // اللون متاح
+                } else if (data.players[selectedColor] === undefined || isOffline(selectedColor)) {
+                    myColor = selectedColor; 
                 } else {
                     const otherColor = selectedColor === 'w' ? 'b' : 'w';
-                    if (data.players[otherColor] === undefined) {
+                    if (data.players[otherColor] === undefined || isOffline(otherColor)) {
                         myColor = otherColor;
                         alert('اللون اللي اخترته كان محجوز، فدخلت تلقائياً باللون ' + (myColor === 'w' ? 'الأبيض ⚪' : 'الأسود ⚫'));
                     } else {
                         isSpectator = true; alert('الغرفة مليانة، هتدخل الجيم كـ مشاهد 👀');
                     }
                 }
-                // ------------------------------
 
-                if (!isSpectator) { dbRef.child('players').update({ [myColor]: myName }); dbRef.child('players/' + myColor).onDisconnect().remove(); }
+                if (!isSpectator) { 
+                    dbRef.child('players').update({ [myColor]: myName }); 
+                    dbRef.child('status').update({ [myColor]: 'online' });
+                    dbRef.child('status/' + myColor).onDisconnect().set('offline'); 
+                }
                 else { mySpectatorId = dbRef.child('spectators').push().key; dbRef.child('spectators/' + mySpectatorId).set(myName); dbRef.child('spectators/' + mySpectatorId).onDisconnect().remove(); }
+                
                 enterGameRoom();
             } else $('#lobbyMessage').text('الغرفة دي مش موجودة!');
         });
@@ -488,7 +504,10 @@
     });
 
     $('#leaveRoomBtn').click(() => {
-        if(dbRef && !isBotMode) { if (!isSpectator) dbRef.child('players/' + myColor).remove(); else if (mySpectatorId) dbRef.child('spectators/' + mySpectatorId).remove(); }
+        if(dbRef && !isBotMode) { 
+            if (!isSpectator) dbRef.child('status/' + myColor).set('offline'); 
+            else if (mySpectatorId) dbRef.child('spectators/' + mySpectatorId).remove(); 
+        }
         window.history.pushState({}, '', window.location.pathname); location.reload(); 
     });
 
@@ -510,7 +529,6 @@
         }
     }
 
-    // دالة تظليل آخر حركة
     function drawLastMoveHighlight(lastMoveObj) {
         $('#board .square-55d63').removeClass('highlight-last');
         if (lastMoveObj && lastMoveObj.from && lastMoveObj.to) {
@@ -525,7 +543,6 @@
     $(document).on('click', '#board .square-55d63', function() {
         if (isSpectator || gameEnded || game.turn() !== myColor) return;
         
-        // منع اللعب لو كان بيشوف الحركات السابقة
         if (isViewingHistory) {
             currentHistoryIndex = fenHistory.length - 1;
             board.position(fenHistory[currentHistoryIndex], true);
@@ -575,14 +592,12 @@
             fen: game.fen(), turn: game.turn(), lastMoveWasCapture: move.captured != null, 
             lastMoveAt: isBotMode ? Date.now() : firebase.database.ServerValue.TIMESTAMP,
             wTime: newW, bTime: newB, timerStarted: true,
-            lastMove: { from: move.from, to: move.to } // حفظ آخر حركة للتظليل
+            lastMove: { from: move.from, to: move.to } 
         };
 
-        // --- تحديث تاريخ الحركات للأسهم ---
         if (fenHistory[fenHistory.length - 1] !== game.fen()) fenHistory.push(game.fen());
         currentHistoryIndex = fenHistory.length - 1; isViewingHistory = false;
         updateData.fenHistory = fenHistory;
-        // ----------------------------------
 
         if (!roomData.timerStarted) updateData.gameStartTime = isBotMode ? Date.now() : firebase.database.ServerValue.TIMESTAMP;
 
@@ -629,12 +644,10 @@
             roomData = snapshot.val(); if(!roomData) return;
             if (roomData.players) roomPlayers = roomData.players;
             
-            // --- استقبال تاريخ الحركات للأسهم ---
             if (roomData.fenHistory) {
                 fenHistory = roomData.fenHistory;
                 if (!isViewingHistory) currentHistoryIndex = fenHistory.length - 1;
             }
-            // ------------------------------------
 
             if (roomData.spectators) {
                 const specNames = Object.values(roomData.spectators);
@@ -653,7 +666,23 @@
 
     function setupPlayerBars() {
         const top = (myColor === 'b') ? 'w' : 'b', bot = (myColor === 'b') ? 'b' : 'w';
-        $('#topName').text(roomPlayers[top] || 'اللاعب المنافس'); $('#bottomName').text(roomPlayers[bot] || 'أنت');
+        
+        let topNameStr = roomPlayers[top] || 'في الانتظار...';
+        let botNameStr = isSpectator ? (roomPlayers[bot] || 'في الانتظار...') : 'أنت';
+
+        if (!isBotMode && roomData) {
+            if (roomPlayers[top]) {
+                let st = (roomData.status && roomData.status[top] === 'online') ? ' 🟢' : ' 🔴 (خرج)';
+                topNameStr += st;
+            }
+            if (roomPlayers[bot]) {
+                let st = (roomData.status && roomData.status[bot] === 'online') ? ' 🟢' : ' 🔴 (خرج)';
+                if (!isSpectator) st = ' 🟢'; 
+                botNameStr += st;
+            }
+        }
+
+        $('#topName').text(topNameStr); $('#bottomName').text(botNameStr);
     }
 
     function updateStatus() {
@@ -722,7 +751,6 @@
         $('#sendMsgBtn').click(sendMsg); $('#chatInput').keypress(e => { if (e.which === 13) sendMsg(); });
     }
 
-    // --- أحداث زراير التحكم (قلب اللوحة والأسهم) ---
     $('#flipBoardBtn').click(() => {
         if (board) board.flip();
     });
@@ -743,7 +771,6 @@
         }
     });
 
-    // --- أحداث التكبير والتصغير (Zoom) ---
     let currentZoomLevel = 1;
     $('#zoomInBtn').click(() => {
         currentZoomLevel += 0.1;
@@ -751,7 +778,7 @@
     });
 
     $('#zoomOutBtn').click(() => {
-        if (currentZoomLevel > 0.3) { // عشان ميصغرش بزيادة ويختفي
+        if (currentZoomLevel > 0.3) { 
             currentZoomLevel -= 0.1;
             document.body.style.zoom = currentZoomLevel;
         }
