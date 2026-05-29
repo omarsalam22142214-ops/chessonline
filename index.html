@@ -99,6 +99,11 @@
             background: rgba(0,0,0,0.05); border-radius: 8px;
         }
 
+        .spectators-box {
+            text-align: center; font-size: 1em; margin: 15px 0; padding: 10px;
+            background: rgba(23, 162, 184, 0.1); border-radius: 8px; border: 1px dashed #17a2b8;
+        }
+
         .settings-bar { display: flex; justify-content: space-around; flex-wrap: wrap; margin-top: 15px; gap: 10px; }
 
         .legal-move-hint {
@@ -125,6 +130,7 @@
         </div>
     </div>
 
+    <!-- شاشة اللوبي -->
     <div id="lobby-area" class="panel">
         <h3>إعدادات اللاعب</h3>
         <div class="form-group">
@@ -148,6 +154,7 @@
         <p id="lobbyMessage" style="color: red;"></p>
     </div>
 
+    <!-- شاشة اللعب -->
     <div id="game-area" class="panel">
         <div class="header" style="margin-bottom: 0;">
             <div>
@@ -165,6 +172,12 @@
         
         <div class="board-container">
             <div id="board"></div>
+        </div>
+
+        <!-- صندوق المشاهدين -->
+        <div id="spectatorsBox" class="spectators-box" style="display: none;">
+            👀 المشاهدين الآن (<span id="spectatorsCount">0</span>): <br>
+            <strong id="spectatorsList" style="color: #17a2b8;"></strong>
         </div>
 
         <div class="settings-bar">
@@ -214,7 +227,8 @@
     let myName = '';
     let dbRef = null;
     let isSpectator = false;
-    let roomPlayers = {}; // لتخزين أسماء اللاعبين من السيرفر
+    let mySpectatorId = null; // لتخزين الـ ID بتاع المشاهد عشان نعرف نحذفه
+    let roomPlayers = {}; 
     let gameEndedByResign = false;
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -284,6 +298,9 @@
         dbRef = db.ref('rooms/' + currentRoomId);
         dbRef.set({ fen: 'start', players: { [myColor]: myName }, turn: 'w' });
         
+        // حذف اللاعب لو قفل المتصفح فجأة
+        dbRef.child('players/' + myColor).onDisconnect().remove();
+
         enterGameRoom();
     });
 
@@ -308,6 +325,12 @@
 
                 if (!isSpectator) {
                     dbRef.child('players').update({ [myColor]: myName });
+                    dbRef.child('players/' + myColor).onDisconnect().remove();
+                } else {
+                    // تسجيل المشاهد
+                    mySpectatorId = dbRef.child('spectators').push().key;
+                    dbRef.child('spectators/' + mySpectatorId).set(myName);
+                    dbRef.child('spectators/' + mySpectatorId).onDisconnect().remove();
                 }
                 
                 enterGameRoom();
@@ -317,7 +340,6 @@
         });
     });
 
-    // لوجيك زرار الانسحاب
     $('#resignBtn').click(() => {
         if (isSpectator || game.game_over() || gameEndedByResign) return;
         if (confirm('هل أنت متأكد إنك عايز تنسحب وتنهي الجيم؟ 🏳️')) {
@@ -340,8 +362,12 @@
     });
 
     $('#leaveRoomBtn').click(() => {
-        if(dbRef && !isSpectator) {
-            dbRef.child('players/' + myColor).remove();
+        if(dbRef) {
+            if (!isSpectator) {
+                dbRef.child('players/' + myColor).remove();
+            } else if (mySpectatorId) {
+                dbRef.child('spectators/' + mySpectatorId).remove();
+            }
         }
         window.history.pushState({}, '', window.location.pathname); 
         location.reload(); 
@@ -356,7 +382,7 @@
         if (isSpectator) {
             $('#spectatorBadge').show();
         } else {
-            $('#resignBtn').show(); // إظهار زرار الانسحاب للاعبين فقط
+            $('#resignBtn').show(); 
         }
 
         initBoard();
@@ -426,7 +452,20 @@
                 roomPlayers = data.players;
             }
 
-            // فحص هل حد انسحب؟
+            // تحديث قايمة المشاهدين
+            if (data.spectators) {
+                const spectatorNames = Object.values(data.spectators);
+                if (spectatorNames.length > 0) {
+                    $('#spectatorsBox').show();
+                    $('#spectatorsCount').text(spectatorNames.length);
+                    $('#spectatorsList').text(spectatorNames.join(' ، '));
+                } else {
+                    $('#spectatorsBox').hide();
+                }
+            } else {
+                $('#spectatorsBox').hide();
+            }
+
             if (data.gameOverByResign) {
                 gameEndedByResign = true;
                 const winColor = data.winnerColor;
@@ -450,7 +489,6 @@
         let statusText = '';
         let turnColor = game.turn();
         
-        // جلب اسم اللاعب الفعلي بناءً على دوره
         let currentTurnName = roomPlayers[turnColor] || (turnColor === 'w' ? 'الأبيض' : 'الأسود');
         let opponentColor = turnColor === 'w' ? 'b' : 'w';
         let opponentName = roomPlayers[opponentColor] || (opponentColor === 'w' ? 'الأبيض' : 'الأسود');
