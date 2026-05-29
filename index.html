@@ -48,7 +48,6 @@
 
         .form-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 15px; }
 
-        /* نظام التبويبات Tabs */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
         .tab-btn { flex: 1; padding: 12px; font-size: 1.1em; background: rgba(0,0,0,0.05); color: var(--text-color); border-radius: 8px; border: 1px solid var(--border-color); }
         .tab-btn.active { background: #4CAF50; color: white; border-color: #4CAF50; }
@@ -57,16 +56,24 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         #game-area { display: none; }
-        .board-container { width: 100%; max-width: 500px; margin: 0 auto; position: relative; cursor: pointer; }
+        
+        /* تعديل هنا: تكبير الرقعة لـ 650 بكسل بدلاً من 500 */
+        .board-container { width: 100%; max-width: 650px; margin: 0 auto; position: relative; cursor: pointer; }
+        
         .status-box { text-align: center; font-size: 1.2em; font-weight: bold; margin: 15px 0; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 8px; }
         .spectators-box { text-align: center; font-size: 1em; margin: 15px 0; padding: 10px; background: rgba(23, 162, 184, 0.1); border-radius: 8px; border: 1px dashed #17a2b8; }
         .settings-bar { display: flex; justify-content: space-around; flex-wrap: wrap; margin-top: 15px; gap: 10px; }
         .legal-move-hint { position: absolute; width: 30%; height: 30%; background: rgba(0, 0, 0, 0.3); border-radius: 50%; top: 35%; left: 35%; pointer-events: none; z-index: 10; }
         body.dark-mode .legal-move-hint { background: rgba(255, 255, 255, 0.4); }
+        
+        /* ألوان التظليل (للقطعة المختارة ولآخر حركة) */
         .highlight-active { background-color: rgba(255, 255, 51, 0.6) !important; }
+        .highlight-last { background-color: rgba(155, 199, 0, 0.5) !important; } /* لون آخر حركة */
+        
         .spectator-badge { background: #ff9800; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.9em; display: none; }
 
-        .player-bar { display: flex; align-items: center; justify-content: space-between; background: var(--panel-bg); padding: 10px; border-radius: 8px; margin: 10px auto; border: 1px solid var(--border-color); max-width: 500px; flex-wrap: wrap; }
+        /* تعديل عرض بار اللاعبين عشان يبقى بحجم الرقعة الجديد */
+        .player-bar { display: flex; align-items: center; justify-content: space-between; background: var(--panel-bg); padding: 10px; border-radius: 8px; margin: 10px auto; border: 1px solid var(--border-color); max-width: 650px; flex-wrap: wrap; }
         .player-name { font-weight: bold; font-size: 1.1em; }
         .timer-box { background: #2b2b2b; color: #f1f1f1; font-family: monospace; font-size: 1.4em; padding: 5px 15px; border-radius: 6px; font-weight: bold; transition: all 0.3s; }
         body.dark-mode .timer-box { background: #0f3460; color: #e0e0e0; }
@@ -116,7 +123,6 @@
             <input type="text" id="playerName" placeholder="اسمك إيه؟" required>
         </div>
 
-        <!-- محتوى الأونلاين -->
         <div id="tab-online" class="tab-content active">
             <h3>إعدادات الأونلاين</h3>
             <div class="form-group">
@@ -146,7 +152,6 @@
             </div>
         </div>
 
-        <!-- محتوى البوت -->
         <div id="tab-bot" class="tab-content">
             <h3>إعدادات اللعب ضد الكمبيوتر</h3>
             <div class="form-group">
@@ -271,7 +276,6 @@
 </div>
 
 <script>
-    // التنقل بين التبويبات
     function switchTab(tabId) {
         $('.tab-btn').removeClass('active');
         $('.tab-content').removeClass('active');
@@ -299,12 +303,10 @@
     let roomPlayers = {}, roomData = null; 
     let gameEnded = false, pendingPromotionMove = null, sourceSquare = null, timeoutTriggered = false;
     
-    // متغيرات البوت
     let isBotMode = false;
     let botDifficulty = 'easy';
     let botColor = 'b';
     
-    // خوارزمية البوت
     const pieceValues = { p: 10, n: 30, b: 30, r: 50, q: 90, k: 900 };
     function evaluateBoard(gameObj) {
         let totalEval = 0;
@@ -343,7 +345,7 @@
         let bestMove = -9999, bestMoveFound = moves[Math.floor(Math.random() * moves.length)];
         for (let i = 0; i < moves.length; i++) {
             gameObj.move(moves[i]);
-            const val = minimax(2, gameObj, -10000, 10000, !isMax); // عمق 2 عشان ميبقاش بطيء
+            const val = minimax(2, gameObj, -10000, 10000, !isMax);
             gameObj.undo();
             if (isMax && val >= bestMove) { bestMove = val; bestMoveFound = moves[i]; }
             else if (!isMax && val <= bestMove) { bestMove = val; bestMoveFound = moves[i]; }
@@ -364,7 +366,7 @@
                 if (m.captured && pieceValues[m.captured] > highestVal) { highestVal = pieceValues[m.captured]; bestCapture = m; }
             }
             chosenMove = bestCapture || moves[Math.floor(Math.random() * moves.length)];
-        } else { // Hard
+        } else { 
             const moveStr = getBestMove(game, botColor === 'w');
             chosenMove = moves.find(m => m.san === moveStr || m.from + m.to === moveStr) || moves[0];
         }
@@ -388,14 +390,13 @@
 
     const boardColors = { wood:{light:'#f0d9b5', dark:'#b58863'}, darkwood:{light:'#8b5a2b', dark:'#3d2314'}, cherry:{light:'#e8cfa6', dark:'#a54343'}, marble:{light:'#e8e6e1', dark:'#84939b'}, blue:{light:'#dee3e6', dark:'#8ca2ad'}, ocean:{light:'#b1d4e0', dark:'#2e8bc0'}, green:{light:'#ffffdd', dark:'#86a666'}, purple:{light:'#9f90b0', dark:'#5c4d7d'}, bw:{light:'#ffffff', dark:'#888888'}, sand:{light:'#e6dabc', dark:'#8b4513'}, neon:{light:'#222222', dark:'#39ff14'}, mint:{light:'#f5fffa', dark:'#98ff98'} };
     $('#boardTheme').change(function() { const theme = boardColors[this.value]; document.documentElement.style.setProperty('--board-light', theme.light); document.documentElement.style.setProperty('--board-dark', theme.dark); });
-    $('#pieceTheme').change(function() { if(board) { const fen = game.fen(); board.destroy(); initBoard(); board.position(fen); updateCapturedPieces(); } });
+    $('#pieceTheme').change(function() { if(board) { const fen = game.fen(); board.destroy(); initBoard(); board.position(fen); updateCapturedPieces(); if(roomData && roomData.lastMove) drawLastMoveHighlight(roomData.lastMove); } });
 
     function getPieceImg(piece) {
         const theme = $('#pieceTheme').val();
         return ['wikipedia','alpha','uscf'].includes(theme) ? 'https://chessboardjs.com/img/chesspieces/' + theme + '/' + piece + '.png' : 'https://images.chesscomfiles.com/chess-themes/pieces/' + theme + '/150/' + piece.toLowerCase() + '.png';
     }
 
-    // زرار الأونلاين
     $('#createRoomBtn').click(() => {
         myName = $('#playerName').val().trim(); myColor = $('#playerColorOnline').val();
         if(!myName) return $('#lobbyMessage').text('لازم تكتب اسمك الأول!');
@@ -424,7 +425,6 @@
         });
     });
 
-    // زرار البوت
     $('#startBotGameBtn').click(() => {
         myName = $('#playerName').val().trim(); 
         if(!myName) return $('#lobbyMessage').text('لازم تكتب اسمك الأول يا بطل!');
@@ -475,13 +475,22 @@
             $('#shareBtn').hide(); $('#chatSection').hide(); $('#spectatorsBox').hide();
             $('#resignBtn').show();
             initBoard(); startClientTimerLoop(); processLocalUIUpdate();
-            if (botColor === 'w') setTimeout(playBotMove, 500); // لو البوت أبيض يلعب أولاً
+            if (botColor === 'w') setTimeout(playBotMove, 500);
         } else {
             $('#displayRoomId').text(currentRoomId);
             window.history.pushState({}, '', '?room=' + currentRoomId);
             if (isSpectator) { $('#spectatorBadge').show(); $('#chatSection').hide(); } 
             else { $('#resignBtn').show(); $('#chatSection').show(); setupChat(); }
             initBoard(); listenToFirebase(); startClientTimerLoop();
+        }
+    }
+
+    // دالة تظليل آخر حركة
+    function drawLastMoveHighlight(lastMoveObj) {
+        $('#board .square-55d63').removeClass('highlight-last');
+        if (lastMoveObj && lastMoveObj.from && lastMoveObj.to) {
+            $('#board .square-' + lastMoveObj.from).addClass('highlight-last');
+            $('#board .square-' + lastMoveObj.to).addClass('highlight-last');
         }
     }
 
@@ -523,20 +532,22 @@
         
         let newW = roomData.wTime, newB = roomData.bTime;
         if (roomData.timerStarted) {
-            if (game.turn() === 'b') newW = newW - elapsed + inc; // الأبيض لسه لاعب
+            if (game.turn() === 'b') newW = newW - elapsed + inc;
             else newB = newB - elapsed + inc;
         }
         
         let updateData = { 
             fen: game.fen(), turn: game.turn(), lastMoveWasCapture: move.captured != null, 
             lastMoveAt: isBotMode ? Date.now() : firebase.database.ServerValue.TIMESTAMP,
-            wTime: newW, bTime: newB, timerStarted: true 
+            wTime: newW, bTime: newB, timerStarted: true,
+            lastMove: { from: move.from, to: move.to } // حفظ آخر حركة للتظليل
         };
         if (!roomData.timerStarted) updateData.gameStartTime = isBotMode ? Date.now() : firebase.database.ServerValue.TIMESTAMP;
 
         if (isBotMode) {
             Object.assign(roomData, updateData);
             processLocalUIUpdate();
+            if (roomData.lastMove) drawLastMoveHighlight(roomData.lastMove);
             if (!gameEnded && !game.game_over() && game.turn() === botColor) setTimeout(playBotMove, 400);
         } else {
             dbRef.update(updateData);
@@ -580,7 +591,13 @@
                 if (specNames.length > 0) { $('#spectatorsBox').show(); $('#spectatorsCount').text(specNames.length); $('#spectatorsList').text(specNames.join(' ، ')); } else $('#spectatorsBox').hide();
             } else $('#spectatorsBox').hide();
             processLocalUIUpdate();
-            if(roomData.fen !== game.fen()) { playSound(roomData.lastMoveWasCapture); game.load(roomData.fen); board.position(game.fen()); processLocalUIUpdate(); }
+            if(roomData.fen !== game.fen()) { 
+                playSound(roomData.lastMoveWasCapture); 
+                game.load(roomData.fen); 
+                board.position(game.fen()); 
+                processLocalUIUpdate();
+                if (roomData.lastMove) drawLastMoveHighlight(roomData.lastMove);
+            }
         });
     }
 
