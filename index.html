@@ -75,7 +75,7 @@
         .form-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 15px; }
 
         #game-area { display: none; }
-        .board-container { width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
+        .board-container { width: 100%; max-width: 500px; margin: 0 auto; position: relative; cursor: pointer; }
 
         .status-box {
             text-align: center; font-size: 1.2em; font-weight: bold; margin: 15px 0; padding: 10px;
@@ -91,10 +91,15 @@
 
         .legal-move-hint {
             position: absolute; width: 30%; height: 30%;
-            background: rgba(0, 0, 0, 0.25); border-radius: 50%;
+            background: rgba(0, 0, 0, 0.3); border-radius: 50%;
             top: 35%; left: 35%; pointer-events: none; z-index: 10;
         }
         body.dark-mode .legal-move-hint { background: rgba(255, 255, 255, 0.4); }
+
+        /* ستايل المربع النشط (لما تضغط على قطعة) */
+        .highlight-active {
+            background-color: rgba(255, 255, 51, 0.6) !important;
+        }
 
         .spectator-badge {
             background: #ff9800; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.9em; display: none;
@@ -161,7 +166,6 @@
         </div>
     </div>
 
-    <!-- شاشة اللوبي -->
     <div id="lobby-area" class="panel">
         <h3>إعدادات اللاعب</h3>
         <div class="form-group">
@@ -185,7 +189,6 @@
         <p id="lobbyMessage" style="color: red;"></p>
     </div>
 
-    <!-- شاشة اللعب -->
     <div id="game-area" class="panel">
         <div class="header" style="margin-bottom: 0;">
             <div>
@@ -201,17 +204,14 @@
         
         <div class="status-box" id="gameStatus">في انتظار الخصم...</div>
         
-        <!-- القطع المأكولة من اللاعب الأبيض -->
         <div id="captured-w" class="captured-pieces"></div>
 
         <div class="board-container">
             <div id="board"></div>
         </div>
 
-        <!-- القطع المأكولة من اللاعب الأسود -->
         <div id="captured-b" class="captured-pieces"></div>
 
-        <!-- قسم الشات المباشر (للاعبين فقط) -->
         <div id="chatSection" class="chat-section" style="display: none;">
             <div id="chatMessages" class="chat-messages"></div>
             <div class="chat-input-area">
@@ -220,7 +220,6 @@
             </div>
         </div>
 
-        <!-- صندوق المشاهدين -->
         <div id="spectatorsBox" class="spectators-box" style="display: none;">
             👀 المشاهدين الآن (<span id="spectatorsCount">0</span>): <br>
             <strong id="spectatorsList" style="color: #17a2b8;"></strong>
@@ -231,7 +230,11 @@
                 <label>شكل الرقعة:</label>
                 <select id="boardTheme">
                     <option value="wood">خشبي كلاسيك</option>
+                    <option value="darkwood">خشبي غامق جداً</option>
+                    <option value="cherry">خشب الكرز</option>
+                    <option value="marble">رخامي الفخامة</option>
                     <option value="blue">أزرق وأبيض</option>
+                    <option value="ocean">أزرق محيطي</option>
                     <option value="green">أخضر شطرنج.كوم</option>
                     <option value="purple">بنفسجي مودرن</option>
                     <option value="bw">أبيض وأسود</option>
@@ -244,10 +247,15 @@
                 <label>شكل القطع:</label>
                 <select id="pieceTheme">
                     <option value="wikipedia">كلاسيك (Wikipedia)</option>
+                    <option value="wood">خشبي (Wood)</option>
+                    <option value="nature">طبيعة (Nature)</option>
+                    <option value="glass">زجاجي (Glass)</option>
+                    <option value="icy_sea">جليدي (Icy Sea)</option>
+                    <option value="bases">قواعد (Bases)</option>
+                    <option value="cases">صناديق (Cases)</option>
                     <option value="alpha">ألفا (Alpha)</option>
                     <option value="uscf">بطولات (USCF)</option>
                     <option value="neo">نيو (Neo)</option>
-                    <option value="glass">زجاجي (Glass)</option>
                     <option value="gothic">قوطي (Gothic)</option>
                 </select>
             </div>
@@ -255,7 +263,6 @@
     </div>
 </div>
 
-<!-- نافذة الترقية -->
 <div id="promotionModal">
     <div class="promotion-content">
         <h3>اختار القطعة للترقية 👑</h3>
@@ -285,6 +292,7 @@
     let roomPlayers = {}; 
     let gameEndedByResign = false;
     let pendingPromotionMove = null; 
+    let sourceSquare = null; // متغير لضغطة البداية
 
     const urlParams = new URLSearchParams(window.location.search);
     const roomFromUrl = urlParams.get('room');
@@ -309,7 +317,11 @@
 
     const boardColors = {
         wood: { light: '#f0d9b5', dark: '#b58863' },
+        darkwood: { light: '#8b5a2b', dark: '#3d2314' }, // الخشبي الغامق جدا
+        cherry: { light: '#e8cfa6', dark: '#a54343' },
+        marble: { light: '#e8e6e1', dark: '#84939b' },
         blue: { light: '#dee3e6', dark: '#8ca2ad' },
+        ocean: { light: '#b1d4e0', dark: '#2e8bc0' },
         green: { light: '#ffffdd', dark: '#86a666' },
         purple: { light: '#9f90b0', dark: '#5c4d7d' },
         bw: { light: '#ffffff', dark: '#888888' },
@@ -373,6 +385,7 @@
                     myColor = 'b';
                 } else {
                     isSpectator = true; 
+                    alert('الغرفة مليانة، هتدخل الجيم كـ مشاهد إجباري 👀');
                 }
 
                 if (!isSpectator) {
@@ -444,40 +457,70 @@
 
     function initBoard() {
         const config = {
-            draggable: !isSpectator, 
+            draggable: false, // لغينا الإفلات تماماً
             position: 'start',
             orientation: (myColor === 'b') ? 'black' : 'white',
-            pieceTheme: getPieceImg,
-            onDragStart: onDragStart,
-            onDrop: onDrop,
-            onSnapEnd: onSnapEnd
+            pieceTheme: getPieceImg
         };
         board = Chessboard('board', config);
         $(window).resize(board.resize);
         updateCapturedPieces(); 
     }
 
-    function onDragStart(source, piece, position, orientation) {
-        if (isSpectator || game.game_over() || gameEndedByResign) return false;
-        if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
-            (game.turn() === 'b' && piece.search(/^w/) !== -1) ||
-            (game.turn() !== myColor)) {
-            return false;
+    // منطق اللعب "ضغطة وضغطة"
+    $(document).on('click', '#board .square-55d63', function() {
+        if (isSpectator || game.game_over() || gameEndedByResign || game.turn() !== myColor) return;
+
+        const square = $(this).attr('data-square');
+        const piece = game.get(square);
+
+        // لو لسه مختارش قطعة
+        if (!sourceSquare) {
+            // لو ضغط على مربع فاضي أو قطعة الخصم، ميعملش حاجة
+            if (!piece || piece.color !== myColor) return;
+            
+            sourceSquare = square;
+            $(this).addClass('highlight-active');
+            showLegalMoves(square);
+        } else {
+            // لو كان مختار قطعة قبل كدا
+            // لو ضغط على نفس القطعة يلغي التحديد
+            if (sourceSquare === square) {
+                clearSelection();
+                return;
+            }
+
+            // لو ضغط على قطعة تانية بتاعته، ينقل التحديد ليها
+            if (piece && piece.color === myColor) {
+                clearSelection();
+                sourceSquare = square;
+                $(this).addClass('highlight-active');
+                showLegalMoves(square);
+                return;
+            }
+
+            // محاولة التحرك
+            handleMoveAttempt(sourceSquare, square);
         }
+    });
 
-        const moves = game.moves({ square: source, verbose: true });
-        if (moves.length === 0) return;
+    function clearSelection() {
+        sourceSquare = null;
+        $('#board .square-55d63').removeClass('highlight-active');
+        removeLegalMoveHints();
+    }
 
+    function showLegalMoves(square) {
+        const moves = game.moves({ square: square, verbose: true });
         for (let i = 0; i < moves.length; i++) {
             $('#board .square-' + moves[i].to).append('<div class="legal-move-hint"></div>');
         }
     }
 
-    function onDrop(source, target) {
-        removeLegalMoveHints(); 
-
+    function handleMoveAttempt(source, target) {
         const piece = game.get(source);
         
+        // التحقق من الترقية
         if (piece && piece.type === 'p') {
             const isPromotion = (piece.color === 'w' && target.charAt(1) === '8') ||
                                 (piece.color === 'b' && target.charAt(1) === '1');
@@ -489,14 +532,22 @@
                 if (validMove) {
                     pendingPromotionMove = { source, target, color: piece.color };
                     showPromotionModal(piece.color);
-                    return 'snapback'; 
+                    clearSelection();
+                    return; 
                 }
             }
         }
 
         const move = game.move({ from: source, to: target });
-        if (move === null) return 'snapback';
+        
+        if (move === null) {
+            clearSelection(); // حركة غير صحيحة، الغي التحديد
+            return;
+        }
 
+        // الحركة صحيحة
+        clearSelection();
+        board.position(game.fen(), true); 
         finalizeMoveToFirebase(move);
     }
 
@@ -536,14 +587,8 @@
         pendingPromotionMove = null;
         
         if (move) {
-            board.position(game.fen()); 
+            board.position(game.fen(), true); 
             finalizeMoveToFirebase(move);
-        }
-    }
-
-    function onSnapEnd() {
-        if (!pendingPromotionMove) {
-            board.position(game.fen());
         }
     }
 
