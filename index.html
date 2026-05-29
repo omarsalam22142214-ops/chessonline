@@ -439,7 +439,33 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const roomFromUrl = urlParams.get('room');
-    if (roomFromUrl) $('#roomIdInput').val(roomFromUrl);
+    
+    // التعديل الجديد: الشيك على الـ sessionStorage عشان الريفريش
+    if (roomFromUrl) {
+        $('#roomIdInput').val(roomFromUrl);
+        const savedName = sessionStorage.getItem('chess_playerName');
+        const savedRoom = sessionStorage.getItem('chess_currentRoomId');
+        
+        if (savedName && savedRoom === roomFromUrl) {
+            $('#playerName').val(savedName);
+            myName = savedName;
+            myColor = sessionStorage.getItem('chess_myColor');
+            isSpectator = sessionStorage.getItem('chess_isSpectator') === 'true';
+            currentRoomId = roomFromUrl;
+            isBotMode = false;
+            dbRef = db.ref('rooms/' + currentRoomId);
+            
+            if (!isSpectator) {
+                dbRef.child('status').update({ [myColor]: 'online' });
+                dbRef.child('status/' + myColor).onDisconnect().set('offline');
+            } else {
+                mySpectatorId = dbRef.child('spectators').push().key; 
+                dbRef.child('spectators/' + mySpectatorId).set(myName); 
+                dbRef.child('spectators/' + mySpectatorId).onDisconnect().remove();
+            }
+            enterGameRoom();
+        }
+    }
 
     const moveSound = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-self.mp3');
     const captureSound = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/capture.mp3');
@@ -466,6 +492,13 @@
         dbRef = db.ref('rooms/' + currentRoomId);
         dbRef.set({ fen: 'start', turn: 'w', players: { [myColor]: myName }, status: { [myColor]: 'online' }, timeControl: tc, wTime: initialSeconds, bTime: initialSeconds, timerStarted: false, lastMoveAt: firebase.database.ServerValue.TIMESTAMP });
         dbRef.child('status/' + myColor).onDisconnect().set('offline');
+        
+        // حفظ بيانات الجلسة عشان الريفريش
+        sessionStorage.setItem('chess_playerName', myName);
+        sessionStorage.setItem('chess_myColor', myColor);
+        sessionStorage.setItem('chess_currentRoomId', currentRoomId);
+        sessionStorage.setItem('chess_isSpectator', 'false');
+        
         enterGameRoom();
     });
 
@@ -479,7 +512,6 @@
 
                 const selectedColor = $('#playerColorOnline').val();
                 
-                // هنا التعديل السحري: بنتأكد إن الشخص اللي بيحاول يرجع للجيم هو نفس الشخص بالاسم الأصلي
                 const isOffline = (c) => (data.status && data.status[c] === 'offline' && data.players[c] === myName);
 
                 if (!data.players) {
@@ -502,6 +534,12 @@
                     dbRef.child('status/' + myColor).onDisconnect().set('offline'); 
                 }
                 else { mySpectatorId = dbRef.child('spectators').push().key; dbRef.child('spectators/' + mySpectatorId).set(myName); dbRef.child('spectators/' + mySpectatorId).onDisconnect().remove(); }
+                
+                // حفظ بيانات الجلسة عشان الريفريش
+                sessionStorage.setItem('chess_playerName', myName);
+                sessionStorage.setItem('chess_myColor', myColor);
+                sessionStorage.setItem('chess_currentRoomId', currentRoomId);
+                sessionStorage.setItem('chess_isSpectator', isSpectator);
                 
                 enterGameRoom();
             } else $('#lobbyMessage').text('الغرفة دي مش موجودة!');
@@ -550,6 +588,8 @@
             if (!isSpectator) dbRef.child('status/' + myColor).set('offline'); 
             else if (mySpectatorId) dbRef.child('spectators/' + mySpectatorId).remove(); 
         }
+        // مسح بيانات الجلسة عشان يقدر يدخل غرفة تانية
+        sessionStorage.removeItem('chess_currentRoomId');
         window.history.pushState({}, '', window.location.pathname); location.reload(); 
     });
 
