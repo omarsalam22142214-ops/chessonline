@@ -478,7 +478,9 @@
                 const data = snapshot.val(); currentRoomId = roomId; dbRef = db.ref('rooms/' + currentRoomId);
 
                 const selectedColor = $('#playerColorOnline').val();
-                const isOffline = (c) => (data.status && data.status[c] === 'offline');
+                
+                // هنا التعديل السحري: بنتأكد إن الشخص اللي بيحاول يرجع للجيم هو نفس الشخص بالاسم الأصلي
+                const isOffline = (c) => (data.status && data.status[c] === 'offline' && data.players[c] === myName);
 
                 if (!data.players) {
                     myColor = selectedColor;
