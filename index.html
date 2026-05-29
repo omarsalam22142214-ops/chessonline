@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=1024">
-    <title>شطرنج  </title>
+    <title> شطرنج</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
     
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -97,6 +101,41 @@
         .chat-input-area input { flex: 1; border: none; border-radius: 0; margin: 0; padding: 12px; background: var(--panel-bg); color: var(--text-color); }
         .chat-input-area input:focus { outline: none; }
         .chat-input-area button { margin: 0; border-radius: 0; padding: 12px 15px; border-right: 1px solid var(--border-color); }
+
+        /* تنسيقات زراير الزووم بديلة لـ Tailwind */
+        .zoom-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 50;
+        }
+        .zoom-btn {
+            background-color: #374151;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            font-size: 1.25rem;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 0;
+            padding: 0;
+        }
+        .zoom-btn:hover { background-color: #4b5563; }
+        .zoom-btn-reset { background-color: #6b7280; font-size: 0.75rem; }
+        .zoom-btn-reset:hover { background-color: #9ca3af; }
+        @media (max-width: 768px) {
+            .zoom-controls { display: none; }
+        }
     </style>
 </head>
 <body class="dark-mode">
@@ -223,7 +262,6 @@
             <div id="chatMessages" class="chat-messages"></div>
             <div class="chat-input-area">
                 <input type="text" id="chatInput" placeholder="اكتب رسالة لخصمك هنا..." autocomplete="off">
-                <!-- الإضافة هنا: زرار تسجيل الصوت -->
                 <button id="recordBtn" title="تسجيل صوتي">🎤</button>
                 <button id="sendMsgBtn">إرسال</button>
             </div>
@@ -276,7 +314,7 @@
         <p>اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى سَيِّدِنَا مُحَمَّدٍ ﷺ</p>
         
         <div style="margin-top: 20px;">
-            <a href="https://t.me/livei213213n2027" target="_blank" style="display: inline-block; background-color: #0088cc; color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-size: 18px; font-weight: bold; border: 2px solid #4caac9; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: all 0.3s ease;">
+            <a href="https://t.me/l27" target="_blank" style="display: inline-block; background-color: #0088cc; color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-size: 18px; font-weight: bold; border: 2px solid #4caac9; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: all 0.3s ease;">
                 💬 تواصل مع المبرمج
             </a>
         </div>
@@ -291,10 +329,10 @@
     </div>
 </div>
 
-<div class="fixed bottom-5 right-5 hidden md:flex flex-col gap-2 z-50">
-    <button id="zoomInBtn" class="bg-gray-800 dark:bg-gray-600 text-white w-10 h-10 rounded-full shadow-lg text-xl font-bold hover:bg-gray-700 transition focus:outline-none flex justify-center items-center" title="تكبير">+</button>
-    <button id="zoomOutBtn" class="bg-gray-800 dark:bg-gray-600 text-white w-10 h-10 rounded-full shadow-lg text-xl font-bold hover:bg-gray-700 transition focus:outline-none flex justify-center items-center" title="تصغير">-</button>
-    <button id="zoomResetBtn" class="bg-gray-500 text-white w-10 h-10 rounded-full shadow-lg text-xs font-bold hover:bg-gray-400 transition focus:outline-none flex justify-center items-center" title="الوضع الافتراضي">100%</button>
+<div class="zoom-controls">
+    <button id="zoomInBtn" class="zoom-btn" title="تكبير">+</button>
+    <button id="zoomOutBtn" class="zoom-btn" title="تصغير">-</button>
+    <button id="zoomResetBtn" class="zoom-btn zoom-btn-reset" title="الوضع الافتراضي">100%</button>
 </div>
 
 <script>
@@ -693,7 +731,8 @@
         if (game.in_checkmate()) { gameEnded = true; $('#gameStatus').html(`كش مات! <b>${roomPlayers[t === 'w' ? 'b' : 'w']}</b> فاز بالجيم! 🏆`); } 
         else if (game.in_draw()) { gameEnded = true; $('#gameStatus').html('انتهت المباراة بالتعادل!'); } 
         else {
-            let str = `دور: <b>${roomPlayers[t] || (t === 'w' ? 'الأبيض' : 'الأسود')}</b>`;
+            let playerName = roomPlayers[t] || (t === 'w' ? 'اللاعب الأبيض' : 'اللاعب الأسود');
+            let str = `دور: <b>${playerName}</b>`;
             if (game.in_check()) str += ' <span style="color:red;">(كش ملك! ⚠️)</span>';
             $('#gameStatus').html(str);
         }
@@ -747,7 +786,6 @@
         chatRef.on('child_added', snapshot => {
             const msg = snapshot.val();
             let msgContent = '';
-            // لو الرسالة فيها صوت، بيعرض المٌشغل، ولو نص بيعرضه عادي
             if (msg.audio) {
                 msgContent = `<strong>${msg.sender}:</strong><br><audio controls src="${msg.audio}" style="max-width: 100%; height: 35px; margin-top: 5px; outline: none;"></audio>`;
             } else {
@@ -761,7 +799,6 @@
         $('#sendMsgBtn').click(sendMsg); $('#chatInput').keypress(e => { if (e.which === 13) sendMsg(); });
     }
 
-    // --- أحداث تسجيل الصوت في الشات ---
     let mediaRecorder;
     let audioChunks = [];
     let isRecording = false;
@@ -790,15 +827,15 @@
 
                 mediaRecorder.start();
                 isRecording = true;
-                $('#recordBtn').text('⏹️').css('background-color', '#dc3545').addClass('timer-warning'); // بينور أحمر وهو شغال
+                $('#recordBtn').text('⏹️').css('background-color', '#dc3545').addClass('timer-warning'); 
             } catch (err) {
                 alert('لازم توافق على صلاحية المايك عشان تسجل صوت يا بطل!');
             }
         } else {
             mediaRecorder.stop();
-            mediaRecorder.stream.getTracks().forEach(track => track.stop()); // عشان يقفل المايك من المتصفح
+            mediaRecorder.stream.getTracks().forEach(track => track.stop()); 
             isRecording = false;
-            $('#recordBtn').text('🎤').css('background-color', '').removeClass('timer-warning'); // بيرجع للشكل الطبيعي
+            $('#recordBtn').text('🎤').css('background-color', '').removeClass('timer-warning'); 
         }
     });
 
@@ -839,6 +876,15 @@
         currentZoomLevel = 1;
         document.body.style.zoom = currentZoomLevel;
     });
+
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker Registered!', reg))
+                .catch(err => console.log('Service Worker Registration Failed (ده طبيعي لو مش رافعه على سيرفر لسه):', err));
+        });
+    }
 
 </script>
 
