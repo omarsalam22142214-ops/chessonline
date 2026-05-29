@@ -47,38 +47,21 @@
         .container { max-width: 800px; width: 100%; }
 
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 10px;
-            flex-wrap: wrap;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; gap: 10px; flex-wrap: wrap;
         }
 
         .panel {
-            background-color: var(--panel-bg);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border: 1px solid var(--border-color);
-            margin-bottom: 20px;
+            background-color: var(--panel-bg); padding: 20px; border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid var(--border-color); margin-bottom: 20px;
         }
 
         input, select, button {
-            padding: 10px;
-            margin: 5px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            font-size: 16px;
+            padding: 10px; margin: 5px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 16px;
         }
 
         button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s;
+            background-color: #4CAF50; color: white; border: none; cursor: pointer; font-weight: bold; transition: background 0.3s;
         }
 
         button:hover { background-color: #45a049; }
@@ -114,8 +97,56 @@
         body.dark-mode .legal-move-hint { background: rgba(255, 255, 255, 0.4); }
 
         .spectator-badge {
-            background: #ff9800; color: white; padding: 5px 10px;
-            border-radius: 5px; font-size: 0.9em; display: none;
+            background: #ff9800; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.9em; display: none;
+        }
+
+        .captured-pieces {
+            display: flex; flex-wrap: wrap; gap: 5px; min-height: 40px; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.03); border-radius: 8px; padding: 5px; margin: 10px 0;
+        }
+        .captured-pieces img { width: 35px; height: 35px; }
+
+        #promotionModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .promotion-content {
+            background: var(--panel-bg); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color);
+        }
+        .promotion-content h3 { margin-top: 0; }
+        .promotion-options { display: flex; gap: 10px; justify-content: center; }
+        .promotion-options img {
+            width: 60px; height: 60px; cursor: pointer; border: 2px solid transparent; border-radius: 8px; transition: 0.2s;
+        }
+        .promotion-options img:hover { border-color: #4CAF50; background: rgba(76, 175, 80, 0.1); }
+
+        /* تنسيقات الشات المباشر */
+        .chat-section {
+            margin-top: 20px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;
+        }
+        .chat-messages {
+            height: 150px; overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.02);
+            display: flex; flex-direction: column; gap: 5px;
+        }
+        .chat-message {
+            background: var(--panel-bg); padding: 8px 12px; border-radius: 6px; font-size: 0.95em;
+            border: 1px solid var(--border-color); width: fit-content; max-width: 80%;
+        }
+        .chat-message.me {
+            align-self: flex-end; background: #d1f5d3; border-color: #a3d9a5; color: #1a5e20;
+        }
+        body.dark-mode .chat-message.me {
+            background: #1b5e20; border-color: #2e7d32; color: #e8f5e9;
+        }
+        .chat-input-area {
+            display: flex; border-top: 1px solid var(--border-color);
+        }
+        .chat-input-area input {
+            flex: 1; border: none; border-radius: 0; margin: 0; padding: 12px; background: var(--panel-bg); color: var(--text-color);
+        }
+        .chat-input-area input:focus { outline: none; }
+        .chat-input-area button {
+            margin: 0; border-radius: 0; padding: 12px 20px; border-right: 1px solid var(--border-color);
         }
     </style>
 </head>
@@ -170,8 +201,23 @@
         
         <div class="status-box" id="gameStatus">في انتظار الخصم...</div>
         
+        <!-- القطع المأكولة من اللاعب الأبيض -->
+        <div id="captured-w" class="captured-pieces"></div>
+
         <div class="board-container">
             <div id="board"></div>
+        </div>
+
+        <!-- القطع المأكولة من اللاعب الأسود -->
+        <div id="captured-b" class="captured-pieces"></div>
+
+        <!-- قسم الشات المباشر (للاعبين فقط) -->
+        <div id="chatSection" class="chat-section" style="display: none;">
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="اكتب رسالة لخصمك هنا..." autocomplete="off">
+                <button id="sendMsgBtn">إرسال</button>
+            </div>
         </div>
 
         <!-- صندوق المشاهدين -->
@@ -209,6 +255,14 @@
     </div>
 </div>
 
+<!-- نافذة الترقية -->
+<div id="promotionModal">
+    <div class="promotion-content">
+        <h3>اختار القطعة للترقية 👑</h3>
+        <div class="promotion-options" id="promotionOptions"></div>
+    </div>
+</div>
+
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyBtIkF-UhkeFa-cxutgJAQpR7K_IjKxloc",
@@ -227,15 +281,14 @@
     let myName = '';
     let dbRef = null;
     let isSpectator = false;
-    let mySpectatorId = null; // لتخزين الـ ID بتاع المشاهد عشان نعرف نحذفه
+    let mySpectatorId = null; 
     let roomPlayers = {}; 
     let gameEndedByResign = false;
+    let pendingPromotionMove = null; 
 
     const urlParams = new URLSearchParams(window.location.search);
     const roomFromUrl = urlParams.get('room');
-    if (roomFromUrl) {
-        $('#roomIdInput').val(roomFromUrl);
-    }
+    if (roomFromUrl) $('#roomIdInput').val(roomFromUrl);
 
     const moveSound = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-self.mp3');
     const captureSound = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/capture.mp3');
@@ -277,6 +330,7 @@
             board.destroy(); 
             initBoard(); 
             board.position(fen);
+            updateCapturedPieces(); 
         }
     });
 
@@ -297,8 +351,6 @@
         currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
         dbRef = db.ref('rooms/' + currentRoomId);
         dbRef.set({ fen: 'start', players: { [myColor]: myName }, turn: 'w' });
-        
-        // حذف اللاعب لو قفل المتصفح فجأة
         dbRef.child('players/' + myColor).onDisconnect().remove();
 
         enterGameRoom();
@@ -327,7 +379,6 @@
                     dbRef.child('players').update({ [myColor]: myName });
                     dbRef.child('players/' + myColor).onDisconnect().remove();
                 } else {
-                    // تسجيل المشاهد
                     mySpectatorId = dbRef.child('spectators').push().key;
                     dbRef.child('spectators/' + mySpectatorId).set(myName);
                     dbRef.child('spectators/' + mySpectatorId).onDisconnect().remove();
@@ -344,11 +395,7 @@
         if (isSpectator || game.game_over() || gameEndedByResign) return;
         if (confirm('هل أنت متأكد إنك عايز تنسحب وتنهي الجيم؟ 🏳️')) {
             const winnerColor = myColor === 'w' ? 'b' : 'w';
-            dbRef.update({
-                gameOverByResign: true,
-                winnerColor: winnerColor,
-                loserName: myName
-            });
+            dbRef.update({ gameOverByResign: true, winnerColor: winnerColor, loserName: myName });
         }
     });
 
@@ -363,11 +410,8 @@
 
     $('#leaveRoomBtn').click(() => {
         if(dbRef) {
-            if (!isSpectator) {
-                dbRef.child('players/' + myColor).remove();
-            } else if (mySpectatorId) {
-                dbRef.child('spectators/' + mySpectatorId).remove();
-            }
+            if (!isSpectator) dbRef.child('players/' + myColor).remove();
+            else if (mySpectatorId) dbRef.child('spectators/' + mySpectatorId).remove();
         }
         window.history.pushState({}, '', window.location.pathname); 
         location.reload(); 
@@ -381,8 +425,13 @@
 
         if (isSpectator) {
             $('#spectatorBadge').show();
+            // المشاهد مش هيشوف الشات خالص
+            $('#chatSection').hide();
         } else {
             $('#resignBtn').show(); 
+            // إظهار الشات وتفعيله للاعبين بس
+            $('#chatSection').show();
+            setupChat();
         }
 
         initBoard();
@@ -405,6 +454,7 @@
         };
         board = Chessboard('board', config);
         $(window).resize(board.resize);
+        updateCapturedPieces(); 
     }
 
     function onDragStart(source, piece, position, orientation) {
@@ -419,19 +469,39 @@
         if (moves.length === 0) return;
 
         for (let i = 0; i < moves.length; i++) {
-            const squareEl = $('#board .square-' + moves[i].to);
-            squareEl.append('<div class="legal-move-hint"></div>');
+            $('#board .square-' + moves[i].to).append('<div class="legal-move-hint"></div>');
         }
     }
 
     function onDrop(source, target) {
         removeLegalMoveHints(); 
 
-        const move = game.move({ from: source, to: target, promotion: 'q' });
+        const piece = game.get(source);
+        
+        if (piece && piece.type === 'p') {
+            const isPromotion = (piece.color === 'w' && target.charAt(1) === '8') ||
+                                (piece.color === 'b' && target.charAt(1) === '1');
+            
+            if (isPromotion) {
+                const moves = game.moves({ verbose: true });
+                const validMove = moves.find(m => m.from === source && m.to === target);
+                
+                if (validMove) {
+                    pendingPromotionMove = { source, target, color: piece.color };
+                    showPromotionModal(piece.color);
+                    return 'snapback'; 
+                }
+            }
+        }
+
+        const move = game.move({ from: source, to: target });
         if (move === null) return 'snapback';
 
+        finalizeMoveToFirebase(move);
+    }
+
+    function finalizeMoveToFirebase(move) {
         playSound(move.captured != null); 
-        
         dbRef.update({
             fen: game.fen(),
             turn: game.turn(),
@@ -439,8 +509,42 @@
         });
     }
 
+    function showPromotionModal(color) {
+        const pieces = ['q', 'r', 'b', 'n']; 
+        $('#promotionOptions').empty();
+        
+        pieces.forEach(p => {
+            const imgUrl = getPieceImg(color + p.toUpperCase());
+            const imgElement = $(`<img src="${imgUrl}" alt="${p}">`);
+            imgElement.click(() => applyPromotion(p));
+            $('#promotionOptions').append(imgElement);
+        });
+        
+        $('#promotionModal').css('display', 'flex');
+    }
+
+    function applyPromotion(pieceType) {
+        $('#promotionModal').hide();
+        if (!pendingPromotionMove) return;
+
+        const move = game.move({
+            from: pendingPromotionMove.source,
+            to: pendingPromotionMove.target,
+            promotion: pieceType
+        });
+
+        pendingPromotionMove = null;
+        
+        if (move) {
+            board.position(game.fen()); 
+            finalizeMoveToFirebase(move);
+        }
+    }
+
     function onSnapEnd() {
-        board.position(game.fen());
+        if (!pendingPromotionMove) {
+            board.position(game.fen());
+        }
     }
 
     function listenToFirebase() {
@@ -448,11 +552,8 @@
             const data = snapshot.val();
             if(!data) return;
 
-            if (data.players) {
-                roomPlayers = data.players;
-            }
+            if (data.players) roomPlayers = data.players;
 
-            // تحديث قايمة المشاهدين
             if (data.spectators) {
                 const spectatorNames = Object.values(data.spectators);
                 if (spectatorNames.length > 0) {
@@ -479,7 +580,9 @@
                 game.load(data.fen);
                 board.position(game.fen());
             }
+            
             updateStatus();
+            updateCapturedPieces(); 
         });
     }
 
@@ -502,6 +605,82 @@
             if (game.in_check()) statusText += ' (كش ملك! ⚠️)';
         }
         $('#gameStatus').html(statusText);
+    }
+
+    function updateCapturedPieces() {
+        const originalCounts = {
+            'w': { 'p': 8, 'n': 2, 'b': 2, 'r': 2, 'q': 1 },
+            'b': { 'p': 8, 'n': 2, 'b': 2, 'r': 2, 'q': 1 }
+        };
+
+        const currentBoard = game.board().flat().filter(p => p !== null);
+        
+        currentBoard.forEach(p => {
+            originalCounts[p.color][p.type]--;
+        });
+
+        const pieceOrder = ['q', 'r', 'b', 'n', 'p'];
+
+        function renderPieces(color, containerId) {
+            const container = $(containerId);
+            container.empty();
+            
+            pieceOrder.forEach(type => {
+                const missingCount = originalCounts[color][type];
+                for (let i = 0; i < missingCount; i++) {
+                    const imgUrl = getPieceImg(color + type.toUpperCase());
+                    container.append(`<img src="${imgUrl}" alt="${type}">`);
+                }
+            });
+        }
+
+        renderPieces('w', '#captured-w');
+        renderPieces('b', '#captured-b');
+    }
+
+    // إعدادات الشات المباشر
+    function setupChat() {
+        const chatRef = dbRef.child('chat');
+
+        // استقبال الرسايل
+        chatRef.on('child_added', snapshot => {
+            const msg = snapshot.val();
+            const isMe = msg.sender === myName;
+            
+            const msgDiv = $('<div>')
+                .addClass('chat-message')
+                .addClass(isMe ? 'me' : '')
+                .html(`<strong>${msg.sender}:</strong> ${msg.text}`);
+            
+            $('#chatMessages').append(msgDiv);
+            
+            // سكرول لتحت تلقائي لما تيجي رسالة جديدة
+            const chatBox = document.getElementById('chatMessages');
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+
+        // دالة إرسال الرسالة
+        function sendMessage() {
+            const text = $('#chatInput').val().trim();
+            if (text) {
+                chatRef.push({
+                    sender: myName,
+                    text: text,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                $('#chatInput').val(''); // تفريغ الخانة بعد الإرسال
+            }
+        }
+
+        // إرسال بالضغط على الزرار
+        $('#sendMsgBtn').click(sendMessage);
+
+        // إرسال بالضغط على زرار Enter
+        $('#chatInput').keypress(function(e) {
+            if (e.which === 13) {
+                sendMessage();
+            }
+        });
     }
 </script>
 
