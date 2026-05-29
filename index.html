@@ -14,14 +14,11 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        /* إعدادات الألوان المتغيرة (الوضع الفاتح والداكن وألوان الرقعة) */
         :root {
             --bg-color: #f4f4f9;
             --text-color: #333;
             --panel-bg: #fff;
             --border-color: #ddd;
-            
-            /* ألوان الرقعة الافتراضية */
             --board-light: #f0d9b5;
             --board-dark: #b58863;
         }
@@ -33,7 +30,6 @@
             --border-color: #0f3460;
         }
 
-        /* تعديل ألوان مربعات الرقعة بناءً على المتغيرات */
         .white-1e1d7 { background-color: var(--board-light) !important; color: var(--board-dark) !important; }
         .black-3c85d { background-color: var(--board-dark) !important; color: var(--board-light) !important; }
 
@@ -48,16 +44,15 @@
             justify-content: center;
         }
 
-        .container {
-            max-width: 800px;
-            width: 100%;
-        }
+        .container { max-width: 800px; width: 100%; }
 
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .panel {
@@ -87,42 +82,35 @@
         }
 
         button:hover { background-color: #45a049; }
-        
         .btn-secondary { background-color: #0f3460; }
         .btn-secondary:hover { background-color: #1a1a2e; }
+        .btn-info { background-color: #17a2b8; }
+        .btn-info:hover { background-color: #138496; }
+        .btn-warning { background-color: #ffc107; color: #212529; }
+        .btn-warning:hover { background-color: #e0a800; }
 
-        .form-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 15px;
-        }
+        .form-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 15px; }
 
         #game-area { display: none; }
-        
-        .board-container {
-            width: 100%;
-            max-width: 500px;
-            margin: 0 auto;
-        }
+        .board-container { width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
 
         .status-box {
-            text-align: center;
-            font-size: 1.2em;
-            font-weight: bold;
-            margin: 15px 0;
-            padding: 10px;
-            background: rgba(0,0,0,0.05);
-            border-radius: 8px;
+            text-align: center; font-size: 1.2em; font-weight: bold; margin: 15px 0; padding: 10px;
+            background: rgba(0,0,0,0.05); border-radius: 8px;
         }
 
-        .settings-bar {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            margin-top: 15px;
-            gap: 10px;
+        .settings-bar { display: flex; justify-content: space-around; flex-wrap: wrap; margin-top: 15px; gap: 10px; }
+
+        .legal-move-hint {
+            position: absolute; width: 30%; height: 30%;
+            background: rgba(0, 0, 0, 0.25); border-radius: 50%;
+            top: 35%; left: 35%; pointer-events: none; z-index: 10;
+        }
+        body.dark-mode .legal-move-hint { background: rgba(255, 255, 255, 0.4); }
+
+        .spectator-badge {
+            background: #ff9800; color: white; padding: 5px 10px;
+            border-radius: 5px; font-size: 0.9em; display: none;
         }
     </style>
 </head>
@@ -131,7 +119,10 @@
 <div class="container">
     <div class="header">
         <h2>شطرنج أونلاين ♟️</h2>
-        <button id="themeToggle" class="btn-secondary">تبديل الوضع (Dark/Light)</button>
+        <div>
+            <button id="muteBtn" class="btn-secondary">🔊 شغال</button>
+            <button id="themeToggle" class="btn-secondary">تبديل الوضع</button>
+        </div>
     </div>
 
     <div id="lobby-area" class="panel">
@@ -152,15 +143,22 @@
         </div>
         <div class="form-group">
             <input type="text" id="roomIdInput" placeholder="كود الغرفة">
-            <button id="joinRoomBtn" class="btn-secondary">انضمام</button>
+            <button id="joinRoomBtn" class="btn-secondary">انضمام أو مشاهدة</button>
         </div>
         <p id="lobbyMessage" style="color: red;"></p>
     </div>
 
     <div id="game-area" class="panel">
         <div class="header" style="margin-bottom: 0;">
-            <h3>غرفة: <span id="displayRoomId"></span></h3>
-            <button id="leaveRoomBtn" style="background-color: #dc3545;">خروج</button>
+            <div>
+                <h3>غرفة: <span id="displayRoomId"></span></h3>
+                <span id="spectatorBadge" class="spectator-badge">👀 وضع المشاهدة</span>
+            </div>
+            <div>
+                <button id="shareBtn" class="btn-info">🔗 نسخ الرابط</button>
+                <button id="resignBtn" class="btn-warning" style="display: none;">🏳️ انسحاب</button>
+                <button id="leaveRoomBtn" style="background-color: #dc3545;">خروج</button>
+            </div>
         </div>
         
         <div class="status-box" id="gameStatus">في انتظار الخصم...</div>
@@ -177,6 +175,10 @@
                     <option value="blue">أزرق وأبيض</option>
                     <option value="green">أخضر شطرنج.كوم</option>
                     <option value="purple">بنفسجي مودرن</option>
+                    <option value="bw">أبيض وأسود</option>
+                    <option value="sand">رملي</option>
+                    <option value="neon">نيون داكن</option>
+                    <option value="mint">نعناعي</option>
                 </select>
             </div>
             <div>
@@ -185,6 +187,9 @@
                     <option value="wikipedia">كلاسيك (Wikipedia)</option>
                     <option value="alpha">ألفا (Alpha)</option>
                     <option value="uscf">بطولات (USCF)</option>
+                    <option value="neo">نيو (Neo)</option>
+                    <option value="glass">زجاجي (Glass)</option>
+                    <option value="gothic">قوطي (Gothic)</option>
                 </select>
             </div>
         </div>
@@ -192,7 +197,6 @@
 </div>
 
 <script>
-    // 1. إعدادات Firebase الخاصة بك
     const firebaseConfig = {
         apiKey: "AIzaSyBtIkF-UhkeFa-cxutgJAQpR7K_IjKxloc",
         authDomain: "spygame-337ee.firebaseapp.com",
@@ -203,25 +207,48 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // متغيرات اللعبة
     let board = null;
     let game = new Chess();
     let currentRoomId = null;
     let myColor = 'w';
     let myName = '';
     let dbRef = null;
+    let isSpectator = false;
+    let roomPlayers = {}; // لتخزين أسماء اللاعبين من السيرفر
+    let gameEndedByResign = false;
 
-    // 2. إعدادات الـ UI والدارك مود
-    $('#themeToggle').click(() => {
-        $('body').toggleClass('dark-mode');
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomFromUrl = urlParams.get('room');
+    if (roomFromUrl) {
+        $('#roomIdInput').val(roomFromUrl);
+    }
+
+    const moveSound = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-self.mp3');
+    const captureSound = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/capture.mp3');
+    let isMuted = false;
+
+    $('#muteBtn').click(function() {
+        isMuted = !isMuted;
+        $(this).text(isMuted ? '🔇 مكتوم' : '🔊 شغال');
     });
 
-    // تغيير ألوان الرقعة
+    function playSound(isCapture) {
+        if (isMuted) return;
+        if (isCapture) captureSound.play().catch(e => {});
+        else moveSound.play().catch(e => {});
+    }
+
+    $('#themeToggle').click(() => $('body').toggleClass('dark-mode'));
+
     const boardColors = {
         wood: { light: '#f0d9b5', dark: '#b58863' },
         blue: { light: '#dee3e6', dark: '#8ca2ad' },
         green: { light: '#ffffdd', dark: '#86a666' },
-        purple: { light: '#9f90b0', dark: '#5c4d7d' }
+        purple: { light: '#9f90b0', dark: '#5c4d7d' },
+        bw: { light: '#ffffff', dark: '#888888' },
+        sand: { light: '#e6dabc', dark: '#8b4513' },
+        neon: { light: '#222222', dark: '#39ff14' },
+        mint: { light: '#f5fffa', dark: '#98ff98' }
     };
 
     $('#boardTheme').change(function() {
@@ -230,41 +257,40 @@
         document.documentElement.style.setProperty('--board-dark', theme.dark);
     });
 
-    // تغيير شكل القطع
     $('#pieceTheme').change(function() {
         if(board) {
-            const pieceStyle = this.value;
             const fen = game.fen();
-            board.destroy(); // تدمير الرقعة القديمة
-            initBoard(pieceStyle); // إنشاء رقعة جديدة بالشكل الجديد
+            board.destroy(); 
+            initBoard(); 
             board.position(fen);
         }
     });
 
-    // 3. اللوجيك الخاص بإنشاء والانضمام للغرفة
+    function getPieceImg(piece) {
+        const theme = $('#pieceTheme').val();
+        if (['wikipedia', 'alpha', 'uscf'].includes(theme)) {
+            return 'https://chessboardjs.com/img/chesspieces/' + theme + '/' + piece + '.png';
+        } else {
+            return 'https://images.chesscomfiles.com/chess-themes/pieces/' + theme + '/150/' + piece.toLowerCase() + '.png';
+        }
+    }
+
     $('#createRoomBtn').click(() => {
         myName = $('#playerName').val().trim();
         myColor = $('#playerColor').val();
         if(!myName) return $('#lobbyMessage').text('لازم تكتب اسمك الأول!');
 
         currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-        
         dbRef = db.ref('rooms/' + currentRoomId);
-        dbRef.set({
-            fen: 'start',
-            players: {
-                [myColor]: myName
-            },
-            turn: 'w'
-        });
-
+        dbRef.set({ fen: 'start', players: { [myColor]: myName }, turn: 'w' });
+        
         enterGameRoom();
     });
 
     $('#joinRoomBtn').click(() => {
         myName = $('#playerName').val().trim();
         const roomId = $('#roomIdInput').val().trim().toUpperCase();
-        if(!myName || !roomId) return $('#lobbyMessage').text('اكتب اسمك وكود الغرفة صح!');
+        if(!myName || !roomId) return $('#lobbyMessage').text('اكتب اسمك وكود الغرفة!');
 
         db.ref('rooms/' + roomId).once('value').then(snapshot => {
             if(snapshot.exists()) {
@@ -272,10 +298,18 @@
                 currentRoomId = roomId;
                 dbRef = db.ref('rooms/' + currentRoomId);
                 
-                // تحديد اللون المتبقي للضيف
-                myColor = roomData.players.w ? 'b' : 'w';
+                if (!roomData.players || !roomData.players.w) {
+                    myColor = 'w';
+                } else if (!roomData.players.b) {
+                    myColor = 'b';
+                } else {
+                    isSpectator = true; 
+                }
+
+                if (!isSpectator) {
+                    dbRef.child('players').update({ [myColor]: myName });
+                }
                 
-                dbRef.child('players').update({ [myColor]: myName });
                 enterGameRoom();
             } else {
                 $('#lobbyMessage').text('الغرفة دي مش موجودة!');
@@ -283,31 +317,62 @@
         });
     });
 
-    $('#leaveRoomBtn').click(() => {
-        if(dbRef) {
-            dbRef.child('players/' + myColor).remove();
-            dbRef.off(); // إيقاف الاستماع للتحديثات
+    // لوجيك زرار الانسحاب
+    $('#resignBtn').click(() => {
+        if (isSpectator || game.game_over() || gameEndedByResign) return;
+        if (confirm('هل أنت متأكد إنك عايز تنسحب وتنهي الجيم؟ 🏳️')) {
+            const winnerColor = myColor === 'w' ? 'b' : 'w';
+            dbRef.update({
+                gameOverByResign: true,
+                winnerColor: winnerColor,
+                loserName: myName
+            });
         }
-        location.reload(); // أسهل طريقة لتنظيف الحالة والرجوع للوبي
     });
 
-    // 4. الدخول لغرفة اللعب
+    $('#shareBtn').click(function() {
+        const shareUrl = window.location.origin + window.location.pathname + '?room=' + currentRoomId;
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            const originalText = $(this).text();
+            $(this).text('✅ تم النسخ!');
+            setTimeout(() => $(this).text(originalText), 2000);
+        });
+    });
+
+    $('#leaveRoomBtn').click(() => {
+        if(dbRef && !isSpectator) {
+            dbRef.child('players/' + myColor).remove();
+        }
+        window.history.pushState({}, '', window.location.pathname); 
+        location.reload(); 
+    });
+
     function enterGameRoom() {
         $('#lobby-area').hide();
         $('#game-area').show();
         $('#displayRoomId').text(currentRoomId);
-        
-        initBoard($('#pieceTheme').val());
+        window.history.pushState({}, '', '?room=' + currentRoomId);
+
+        if (isSpectator) {
+            $('#spectatorBadge').show();
+        } else {
+            $('#resignBtn').show(); // إظهار زرار الانسحاب للاعبين فقط
+        }
+
+        initBoard();
         listenToFirebase();
     }
 
-    // 5. تهيئة رقعة الشطرنج
-    function initBoard(pieceStyle) {
+    function removeLegalMoveHints() {
+        $('#board .legal-move-hint').remove();
+    }
+
+    function initBoard() {
         const config = {
-            draggable: true,
+            draggable: !isSpectator, 
             position: 'start',
-            orientation: myColor === 'w' ? 'white' : 'black',
-            pieceTheme: 'https://chessboardjs.com/img/chesspieces/' + pieceStyle + '/{piece}.png',
+            orientation: (myColor === 'b') ? 'black' : 'white',
+            pieceTheme: getPieceImg,
             onDragStart: onDragStart,
             onDrop: onDrop,
             onSnapEnd: onSnapEnd
@@ -316,33 +381,35 @@
         $(window).resize(board.resize);
     }
 
-    // 6. قوانين الحركة والتحكم (Chess.js)
     function onDragStart(source, piece, position, orientation) {
-        if (game.game_over()) return false;
-        // منع اللاعب من تحريك قطع الخصم أو اللعب في غير دوره
+        if (isSpectator || game.game_over() || gameEndedByResign) return false;
         if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
             (game.turn() === 'b' && piece.search(/^w/) !== -1) ||
             (game.turn() !== myColor)) {
             return false;
         }
+
+        const moves = game.moves({ square: source, verbose: true });
+        if (moves.length === 0) return;
+
+        for (let i = 0; i < moves.length; i++) {
+            const squareEl = $('#board .square-' + moves[i].to);
+            squareEl.append('<div class="legal-move-hint"></div>');
+        }
     }
 
     function onDrop(source, target) {
-        // محاولة الحركة
-        const move = game.move({
-            from: source,
-            to: target,
-            promotion: 'q' // دائماً ترقية لوزير للتبسيط
-        });
+        removeLegalMoveHints(); 
 
-        // إذا كانت الحركة غير قانونية، رجع القطعة مكانها
+        const move = game.move({ from: source, to: target, promotion: 'q' });
         if (move === null) return 'snapback';
 
-        // تحديث الفايربيز بالحركة الجديدة
-        updateStatus();
+        playSound(move.captured != null); 
+        
         dbRef.update({
             fen: game.fen(),
-            turn: game.turn()
+            turn: game.turn(),
+            lastMoveWasCapture: move.captured != null
         });
     }
 
@@ -350,38 +417,53 @@
         board.position(game.fen());
     }
 
-    // 7. الاستماع لتحديثات الخصم من Firebase
     function listenToFirebase() {
         dbRef.on('value', snapshot => {
             const data = snapshot.val();
             if(!data) return;
 
-            // تحديث الرقعة إذا كانت الحركة جاية من الخصم
+            if (data.players) {
+                roomPlayers = data.players;
+            }
+
+            // فحص هل حد انسحب؟
+            if (data.gameOverByResign) {
+                gameEndedByResign = true;
+                const winColor = data.winnerColor;
+                const winnerName = roomPlayers[winColor] || (winColor === 'w' ? 'الأبيض' : 'الأسود');
+                $('#gameStatus').html(`🏳️ انسحب اللاعب <b>${data.loserName}</b>.<br>🏆 الفائز هو: <b>${winnerName}</b>! الجيم انتهى.`);
+                return;
+            }
+
             if(data.fen !== game.fen()) {
+                playSound(data.lastMoveWasCapture);
                 game.load(data.fen);
                 board.position(game.fen());
             }
-            
-            updateStatus(data.players);
+            updateStatus();
         });
     }
 
-    // 8. تحديث حالة اللعبة (نصوص الشاشة)
-    function updateStatus(playersData = null) {
+    function updateStatus() {
+        if (gameEndedByResign) return;
+        
         let statusText = '';
-        let moveColor = game.turn() === 'w' ? 'الأبيض' : 'الأسود';
+        let turnColor = game.turn();
+        
+        // جلب اسم اللاعب الفعلي بناءً على دوره
+        let currentTurnName = roomPlayers[turnColor] || (turnColor === 'w' ? 'الأبيض' : 'الأسود');
+        let opponentColor = turnColor === 'w' ? 'b' : 'w';
+        let opponentName = roomPlayers[opponentColor] || (opponentColor === 'w' ? 'الأبيض' : 'الأسود');
 
         if (game.in_checkmate()) {
-            statusText = `كش مات! اللاعب ${moveColor === 'الأبيض' ? 'الأسود' : 'الأبيض'} فاز! 🏆`;
+            statusText = `كش مات! اللاعب <b>${opponentName}</b> فاز بالجيم! 🏆`;
         } else if (game.in_draw()) {
-            statusText = 'تعادل!';
+            statusText = 'انتهت المباراة بالتعادل!';
         } else {
-            statusText = `دور اللاعب: ${moveColor}`;
-            if (game.in_check()) {
-                statusText += ' (كش ملك! ⚠️)';
-            }
+            statusText = `دور اللاعب: <b>${currentTurnName}</b>`;
+            if (game.in_check()) statusText += ' (كش ملك! ⚠️)';
         }
-        $('#gameStatus').text(statusText);
+        $('#gameStatus').html(statusText);
     }
 </script>
 
