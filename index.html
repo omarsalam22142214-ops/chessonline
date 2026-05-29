@@ -96,20 +96,29 @@
         }
         body.dark-mode .legal-move-hint { background: rgba(255, 255, 255, 0.4); }
 
-        /* ستايل المربع النشط (لما تضغط على قطعة) */
-        .highlight-active {
-            background-color: rgba(255, 255, 51, 0.6) !important;
-        }
+        .highlight-active { background-color: rgba(255, 255, 51, 0.6) !important; }
+        .spectator-badge { background: #ff9800; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.9em; display: none; }
 
-        .spectator-badge {
-            background: #ff9800; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.9em; display: none;
+        /* ستايل بار اللاعب والساعة */
+        .player-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--panel-bg); padding: 10px; border-radius: 8px; margin: 10px auto;
+            border: 1px solid var(--border-color); max-width: 500px; flex-wrap: wrap;
         }
+        .player-name { font-weight: bold; font-size: 1.1em; }
+        .timer-box {
+            background: #2b2b2b; color: #f1f1f1; font-family: monospace; font-size: 1.4em;
+            padding: 5px 15px; border-radius: 6px; font-weight: bold; transition: all 0.3s;
+        }
+        body.dark-mode .timer-box { background: #0f3460; color: #e0e0e0; }
+        .timer-warning { background-color: #dc3545 !important; color: white !important; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        .total-timer { text-align: center; font-size: 1em; color: #888; margin-bottom: 10px; font-weight: bold; background: rgba(0,0,0,0.05); padding: 5px; border-radius: 5px;}
 
         .captured-pieces {
-            display: flex; flex-wrap: wrap; gap: 5px; min-height: 40px; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.03); border-radius: 8px; padding: 5px; margin: 10px 0;
+            display: flex; flex-wrap: wrap; gap: 3px; min-height: 35px; align-items: center; justify-content: flex-end; flex: 1; margin-right: 15px;
         }
-        .captured-pieces img { width: 35px; height: 35px; }
+        .captured-pieces img { width: 30px; height: 30px; }
 
         #promotionModal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -125,10 +134,7 @@
         }
         .promotion-options img:hover { border-color: #4CAF50; background: rgba(76, 175, 80, 0.1); }
 
-        /* تنسيقات الشات المباشر */
-        .chat-section {
-            margin-top: 20px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;
-        }
+        .chat-section { margin-top: 20px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; }
         .chat-messages {
             height: 150px; overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.02);
             display: flex; flex-direction: column; gap: 5px;
@@ -137,22 +143,14 @@
             background: var(--panel-bg); padding: 8px 12px; border-radius: 6px; font-size: 0.95em;
             border: 1px solid var(--border-color); width: fit-content; max-width: 80%;
         }
-        .chat-message.me {
-            align-self: flex-end; background: #d1f5d3; border-color: #a3d9a5; color: #1a5e20;
-        }
-        body.dark-mode .chat-message.me {
-            background: #1b5e20; border-color: #2e7d32; color: #e8f5e9;
-        }
-        .chat-input-area {
-            display: flex; border-top: 1px solid var(--border-color);
-        }
+        .chat-message.me { align-self: flex-end; background: #d1f5d3; border-color: #a3d9a5; color: #1a5e20; }
+        body.dark-mode .chat-message.me { background: #1b5e20; border-color: #2e7d32; color: #e8f5e9; }
+        .chat-input-area { display: flex; border-top: 1px solid var(--border-color); }
         .chat-input-area input {
             flex: 1; border: none; border-radius: 0; margin: 0; padding: 12px; background: var(--panel-bg); color: var(--text-color);
         }
         .chat-input-area input:focus { outline: none; }
-        .chat-input-area button {
-            margin: 0; border-radius: 0; padding: 12px 20px; border-right: 1px solid var(--border-color);
-        }
+        .chat-input-area button { margin: 0; border-radius: 0; padding: 12px 20px; border-right: 1px solid var(--border-color); }
     </style>
 </head>
 <body>
@@ -180,6 +178,16 @@
         
         <h3>إنشاء أو الانضمام لغرفة</h3>
         <div class="form-group">
+            <label>⏱️ الوقت:</label>
+            <select id="timeControlSelect">
+                <option value="600+0">10 دقائق</option>
+                <option value="600+5">10 دقائق + 5 ثواني زيادة</option>
+                <option value="900+0">15 دقيقة</option>
+                <option value="1200+0">20 دقيقة</option>
+                <option value="1800+0">30 دقيقة</option>
+            </select>
+        </div>
+        <div class="form-group">
             <button id="createRoomBtn">إنشاء غرفة جديدة</button>
         </div>
         <div class="form-group">
@@ -190,7 +198,7 @@
     </div>
 
     <div id="game-area" class="panel">
-        <div class="header" style="margin-bottom: 0;">
+        <div class="header" style="margin-bottom: 10px;">
             <div>
                 <h3>غرفة: <span id="displayRoomId"></span></h3>
                 <span id="spectatorBadge" class="spectator-badge">👀 وضع المشاهدة</span>
@@ -202,15 +210,24 @@
             </div>
         </div>
         
+        <div id="totalGameTimer" class="total-timer">وقت المباراة الكلي: 00:00</div>
         <div class="status-box" id="gameStatus">في انتظار الخصم...</div>
         
-        <div id="captured-w" class="captured-pieces"></div>
+        <div id="player-top" class="player-bar">
+            <span id="topName" class="player-name">في الانتظار...</span>
+            <div id="captured-top" class="captured-pieces"></div>
+            <span id="topTimer" class="timer-box">00:00</span>
+        </div>
 
         <div class="board-container">
             <div id="board"></div>
         </div>
 
-        <div id="captured-b" class="captured-pieces"></div>
+        <div id="player-bottom" class="player-bar">
+            <span id="bottomName" class="player-name">أنت</span>
+            <div id="captured-bottom" class="captured-pieces"></div>
+            <span id="bottomTimer" class="timer-box">00:00</span>
+        </div>
 
         <div id="chatSection" class="chat-section" style="display: none;">
             <div id="chatMessages" class="chat-messages"></div>
@@ -271,6 +288,7 @@
 </div>
 
 <script>
+    // حط مفاتيحك بتاعة الفايربيز هنا زي ما هي بالظبط
     const firebaseConfig = {
         apiKey: "AIzaSyBtIkF-UhkeFa-cxutgJAQpR7K_IjKxloc",
         authDomain: "spygame-337ee.firebaseapp.com",
@@ -281,6 +299,13 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // حساب فرق توقيت السيرفر لضمان دقة التايمر
+    let serverOffset = 0;
+    db.ref('.info/serverTimeOffset').on('value', snap => {
+        serverOffset = snap.val() || 0;
+    });
+    function getServerTime() { return Date.now() + serverOffset; }
+
     let board = null;
     let game = new Chess();
     let currentRoomId = null;
@@ -290,9 +315,11 @@
     let isSpectator = false;
     let mySpectatorId = null; 
     let roomPlayers = {}; 
-    let gameEndedByResign = false;
+    let roomData = null; // تخزين الداتا كلها هنا
+    let gameEnded = false;
     let pendingPromotionMove = null; 
-    let sourceSquare = null; // متغير لضغطة البداية
+    let sourceSquare = null; 
+    let timeoutTriggered = false;
 
     const urlParams = new URLSearchParams(window.location.search);
     const roomFromUrl = urlParams.get('room');
@@ -316,18 +343,12 @@
     $('#themeToggle').click(() => $('body').toggleClass('dark-mode'));
 
     const boardColors = {
-        wood: { light: '#f0d9b5', dark: '#b58863' },
-        darkwood: { light: '#8b5a2b', dark: '#3d2314' }, // الخشبي الغامق جدا
-        cherry: { light: '#e8cfa6', dark: '#a54343' },
-        marble: { light: '#e8e6e1', dark: '#84939b' },
-        blue: { light: '#dee3e6', dark: '#8ca2ad' },
-        ocean: { light: '#b1d4e0', dark: '#2e8bc0' },
-        green: { light: '#ffffdd', dark: '#86a666' },
-        purple: { light: '#9f90b0', dark: '#5c4d7d' },
-        bw: { light: '#ffffff', dark: '#888888' },
-        sand: { light: '#e6dabc', dark: '#8b4513' },
-        neon: { light: '#222222', dark: '#39ff14' },
-        mint: { light: '#f5fffa', dark: '#98ff98' }
+        wood: { light: '#f0d9b5', dark: '#b58863' }, darkwood: { light: '#8b5a2b', dark: '#3d2314' },
+        cherry: { light: '#e8cfa6', dark: '#a54343' }, marble: { light: '#e8e6e1', dark: '#84939b' },
+        blue: { light: '#dee3e6', dark: '#8ca2ad' }, ocean: { light: '#b1d4e0', dark: '#2e8bc0' },
+        green: { light: '#ffffdd', dark: '#86a666' }, purple: { light: '#9f90b0', dark: '#5c4d7d' },
+        bw: { light: '#ffffff', dark: '#888888' }, sand: { light: '#e6dabc', dark: '#8b4513' },
+        neon: { light: '#222222', dark: '#39ff14' }, mint: { light: '#f5fffa', dark: '#98ff98' }
     };
 
     $('#boardTheme').change(function() {
@@ -338,21 +359,14 @@
 
     $('#pieceTheme').change(function() {
         if(board) {
-            const fen = game.fen();
-            board.destroy(); 
-            initBoard(); 
-            board.position(fen);
-            updateCapturedPieces(); 
+            const fen = game.fen(); board.destroy(); initBoard(); board.position(fen); updateCapturedPieces(); 
         }
     });
 
     function getPieceImg(piece) {
         const theme = $('#pieceTheme').val();
-        if (['wikipedia', 'alpha', 'uscf'].includes(theme)) {
-            return 'https://chessboardjs.com/img/chesspieces/' + theme + '/' + piece + '.png';
-        } else {
-            return 'https://images.chesscomfiles.com/chess-themes/pieces/' + theme + '/150/' + piece.toLowerCase() + '.png';
-        }
+        if (['wikipedia', 'alpha', 'uscf'].includes(theme)) return 'https://chessboardjs.com/img/chesspieces/' + theme + '/' + piece + '.png';
+        else return 'https://images.chesscomfiles.com/chess-themes/pieces/' + theme + '/150/' + piece.toLowerCase() + '.png';
     }
 
     $('#createRoomBtn').click(() => {
@@ -360,11 +374,19 @@
         myColor = $('#playerColor').val();
         if(!myName) return $('#lobbyMessage').text('لازم تكتب اسمك الأول!');
 
+        const tc = $('#timeControlSelect').val();
+        const initialSeconds = parseInt(tc.split('+')[0]);
+
         currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
         dbRef = db.ref('rooms/' + currentRoomId);
-        dbRef.set({ fen: 'start', players: { [myColor]: myName }, turn: 'w' });
+        dbRef.set({ 
+            fen: 'start', turn: 'w',
+            players: { [myColor]: myName }, 
+            timeControl: tc, wTime: initialSeconds, bTime: initialSeconds,
+            timerStarted: false,
+            lastMoveAt: firebase.database.ServerValue.TIMESTAMP
+        });
         dbRef.child('players/' + myColor).onDisconnect().remove();
-
         enterGameRoom();
     });
 
@@ -375,18 +397,12 @@
 
         db.ref('rooms/' + roomId).once('value').then(snapshot => {
             if(snapshot.exists()) {
-                const roomData = snapshot.val();
-                currentRoomId = roomId;
-                dbRef = db.ref('rooms/' + currentRoomId);
+                const data = snapshot.val();
+                currentRoomId = roomId; dbRef = db.ref('rooms/' + currentRoomId);
                 
-                if (!roomData.players || !roomData.players.w) {
-                    myColor = 'w';
-                } else if (!roomData.players.b) {
-                    myColor = 'b';
-                } else {
-                    isSpectator = true; 
-                    alert('الغرفة مليانة، هتدخل الجيم كـ مشاهد إجباري 👀');
-                }
+                if (!data.players || !data.players.w) myColor = 'w';
+                else if (!data.players.b) myColor = 'b';
+                else { isSpectator = true; alert('الغرفة مليانة، هتدخل الجيم كـ مشاهد إجباري 👀'); }
 
                 if (!isSpectator) {
                     dbRef.child('players').update({ [myColor]: myName });
@@ -396,16 +412,13 @@
                     dbRef.child('spectators/' + mySpectatorId).set(myName);
                     dbRef.child('spectators/' + mySpectatorId).onDisconnect().remove();
                 }
-                
                 enterGameRoom();
-            } else {
-                $('#lobbyMessage').text('الغرفة دي مش موجودة!');
-            }
+            } else $('#lobbyMessage').text('الغرفة دي مش موجودة!');
         });
     });
 
     $('#resignBtn').click(() => {
-        if (isSpectator || game.game_over() || gameEndedByResign) return;
+        if (isSpectator || game.game_over() || gameEnded) return;
         if (confirm('هل أنت متأكد إنك عايز تنسحب وتنهي الجيم؟ 🏳️')) {
             const winnerColor = myColor === 'w' ? 'b' : 'w';
             dbRef.update({ gameOverByResign: true, winnerColor: winnerColor, loserName: myName });
@@ -415,8 +428,7 @@
     $('#shareBtn').click(function() {
         const shareUrl = window.location.origin + window.location.pathname + '?room=' + currentRoomId;
         navigator.clipboard.writeText(shareUrl).then(() => {
-            const originalText = $(this).text();
-            $(this).text('✅ تم النسخ!');
+            const originalText = $(this).text(); $(this).text('✅ تم النسخ!');
             setTimeout(() => $(this).text(originalText), 2000);
         });
     });
@@ -426,306 +438,269 @@
             if (!isSpectator) dbRef.child('players/' + myColor).remove();
             else if (mySpectatorId) dbRef.child('spectators/' + mySpectatorId).remove();
         }
-        window.history.pushState({}, '', window.location.pathname); 
-        location.reload(); 
+        window.history.pushState({}, '', window.location.pathname); location.reload(); 
     });
 
     function enterGameRoom() {
-        $('#lobby-area').hide();
-        $('#game-area').show();
-        $('#displayRoomId').text(currentRoomId);
+        $('#lobby-area').hide(); $('#game-area').show(); $('#displayRoomId').text(currentRoomId);
         window.history.pushState({}, '', '?room=' + currentRoomId);
 
-        if (isSpectator) {
-            $('#spectatorBadge').show();
-            // المشاهد مش هيشوف الشات خالص
-            $('#chatSection').hide();
-        } else {
-            $('#resignBtn').show(); 
-            // إظهار الشات وتفعيله للاعبين بس
-            $('#chatSection').show();
-            setupChat();
-        }
+        if (isSpectator) { $('#spectatorBadge').show(); $('#chatSection').hide(); } 
+        else { $('#resignBtn').show(); $('#chatSection').show(); setupChat(); }
 
-        initBoard();
-        listenToFirebase();
+        initBoard(); listenToFirebase(); startClientTimerLoop();
     }
 
-    function removeLegalMoveHints() {
-        $('#board .legal-move-hint').remove();
-    }
+    function removeLegalMoveHints() { $('#board .legal-move-hint').remove(); }
 
     function initBoard() {
         const config = {
-            draggable: false, // لغينا الإفلات تماماً
-            position: 'start',
-            orientation: (myColor === 'b') ? 'black' : 'white',
-            pieceTheme: getPieceImg
+            draggable: false, position: 'start',
+            orientation: (myColor === 'b') ? 'black' : 'white', pieceTheme: getPieceImg
         };
         board = Chessboard('board', config);
         $(window).resize(board.resize);
-        updateCapturedPieces(); 
     }
 
-    // منطق اللعب "ضغطة وضغطة"
     $(document).on('click', '#board .square-55d63', function() {
-        if (isSpectator || game.game_over() || gameEndedByResign || game.turn() !== myColor) return;
+        if (isSpectator || gameEnded || game.turn() !== myColor) return;
 
         const square = $(this).attr('data-square');
         const piece = game.get(square);
 
-        // لو لسه مختارش قطعة
         if (!sourceSquare) {
-            // لو ضغط على مربع فاضي أو قطعة الخصم، ميعملش حاجة
             if (!piece || piece.color !== myColor) return;
-            
-            sourceSquare = square;
-            $(this).addClass('highlight-active');
-            showLegalMoves(square);
+            sourceSquare = square; $(this).addClass('highlight-active'); showLegalMoves(square);
         } else {
-            // لو كان مختار قطعة قبل كدا
-            // لو ضغط على نفس القطعة يلغي التحديد
-            if (sourceSquare === square) {
-                clearSelection();
-                return;
-            }
-
-            // لو ضغط على قطعة تانية بتاعته، ينقل التحديد ليها
+            if (sourceSquare === square) return clearSelection();
             if (piece && piece.color === myColor) {
-                clearSelection();
-                sourceSquare = square;
-                $(this).addClass('highlight-active');
-                showLegalMoves(square);
-                return;
+                clearSelection(); sourceSquare = square; $(this).addClass('highlight-active'); showLegalMoves(square); return;
             }
-
-            // محاولة التحرك
             handleMoveAttempt(sourceSquare, square);
         }
     });
 
-    function clearSelection() {
-        sourceSquare = null;
-        $('#board .square-55d63').removeClass('highlight-active');
-        removeLegalMoveHints();
-    }
+    function clearSelection() { sourceSquare = null; $('#board .square-55d63').removeClass('highlight-active'); removeLegalMoveHints(); }
 
     function showLegalMoves(square) {
         const moves = game.moves({ square: square, verbose: true });
-        for (let i = 0; i < moves.length; i++) {
-            $('#board .square-' + moves[i].to).append('<div class="legal-move-hint"></div>');
-        }
+        for (let i = 0; i < moves.length; i++) $('#board .square-' + moves[i].to).append('<div class="legal-move-hint"></div>');
     }
 
     function handleMoveAttempt(source, target) {
         const piece = game.get(source);
-        
-        // التحقق من الترقية
         if (piece && piece.type === 'p') {
-            const isPromotion = (piece.color === 'w' && target.charAt(1) === '8') ||
-                                (piece.color === 'b' && target.charAt(1) === '1');
-            
-            if (isPromotion) {
+            const isPromo = (piece.color === 'w' && target.charAt(1) === '8') || (piece.color === 'b' && target.charAt(1) === '1');
+            if (isPromo) {
                 const moves = game.moves({ verbose: true });
-                const validMove = moves.find(m => m.from === source && m.to === target);
-                
-                if (validMove) {
+                if (moves.find(m => m.from === source && m.to === target)) {
                     pendingPromotionMove = { source, target, color: piece.color };
-                    showPromotionModal(piece.color);
-                    clearSelection();
-                    return; 
+                    showPromotionModal(piece.color); clearSelection(); return; 
                 }
             }
         }
 
         const move = game.move({ from: source, to: target });
-        
-        if (move === null) {
-            clearSelection(); // حركة غير صحيحة، الغي التحديد
-            return;
-        }
-
-        // الحركة صحيحة
-        clearSelection();
-        board.position(game.fen(), true); 
-        finalizeMoveToFirebase(move);
+        if (move === null) return clearSelection();
+        clearSelection(); board.position(game.fen(), true); finalizeMoveToFirebase(move);
     }
 
     function finalizeMoveToFirebase(move) {
+        let updateData = {
+            fen: game.fen(), turn: game.turn(), lastMoveWasCapture: move.captured != null,
+            lastMoveAt: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        const tcParts = roomData.timeControl.split('+');
+        const inc = parseInt(tcParts[1]);
+
+        if (!roomData.timerStarted) {
+            updateData.timerStarted = true;
+            updateData.gameStartTime = firebase.database.ServerValue.TIMESTAMP;
+        } else {
+            // حساب الوقت المستهلك للحركة
+            const elapsed = Math.max(0, (getServerTime() - roomData.lastMoveAt) / 1000);
+            if (myColor === 'w') updateData.wTime = roomData.wTime - elapsed + inc;
+            else updateData.bTime = roomData.bTime - elapsed + inc;
+        }
+
+        dbRef.update(updateData);
         playSound(move.captured != null); 
-        dbRef.update({
-            fen: game.fen(),
-            turn: game.turn(),
-            lastMoveWasCapture: move.captured != null
-        });
     }
 
     function showPromotionModal(color) {
-        const pieces = ['q', 'r', 'b', 'n']; 
-        $('#promotionOptions').empty();
-        
+        const pieces = ['q', 'r', 'b', 'n']; $('#promotionOptions').empty();
         pieces.forEach(p => {
-            const imgUrl = getPieceImg(color + p.toUpperCase());
-            const imgElement = $(`<img src="${imgUrl}" alt="${p}">`);
-            imgElement.click(() => applyPromotion(p));
-            $('#promotionOptions').append(imgElement);
+            const imgElement = $(`<img src="${getPieceImg(color + p.toUpperCase())}" alt="${p}">`);
+            imgElement.click(() => applyPromotion(p)); $('#promotionOptions').append(imgElement);
         });
-        
         $('#promotionModal').css('display', 'flex');
     }
 
     function applyPromotion(pieceType) {
-        $('#promotionModal').hide();
-        if (!pendingPromotionMove) return;
-
-        const move = game.move({
-            from: pendingPromotionMove.source,
-            to: pendingPromotionMove.target,
-            promotion: pieceType
-        });
-
+        $('#promotionModal').hide(); if (!pendingPromotionMove) return;
+        const move = game.move({ from: pendingPromotionMove.source, to: pendingPromotionMove.target, promotion: pieceType });
         pendingPromotionMove = null;
-        
-        if (move) {
-            board.position(game.fen(), true); 
-            finalizeMoveToFirebase(move);
-        }
+        if (move) { board.position(game.fen(), true); finalizeMoveToFirebase(move); }
     }
 
     function listenToFirebase() {
         dbRef.on('value', snapshot => {
-            const data = snapshot.val();
-            if(!data) return;
+            roomData = snapshot.val();
+            if(!roomData) return;
+            if (roomData.players) roomPlayers = roomData.players;
 
-            if (data.players) roomPlayers = data.players;
+            setupPlayerBars();
 
-            if (data.spectators) {
-                const spectatorNames = Object.values(data.spectators);
-                if (spectatorNames.length > 0) {
-                    $('#spectatorsBox').show();
-                    $('#spectatorsCount').text(spectatorNames.length);
-                    $('#spectatorsList').text(spectatorNames.join(' ، '));
-                } else {
-                    $('#spectatorsBox').hide();
-                }
-            } else {
-                $('#spectatorsBox').hide();
-            }
+            if (roomData.spectators) {
+                const specNames = Object.values(roomData.spectators);
+                if (specNames.length > 0) {
+                    $('#spectatorsBox').show(); $('#spectatorsCount').text(specNames.length); $('#spectatorsList').text(specNames.join(' ، '));
+                } else $('#spectatorsBox').hide();
+            } else $('#spectatorsBox').hide();
 
-            if (data.gameOverByResign) {
-                gameEndedByResign = true;
-                const winColor = data.winnerColor;
+            // فحص انتهاء اللعبة
+            if (roomData.gameOverByResign) {
+                gameEnded = true; const winColor = roomData.winnerColor;
                 const winnerName = roomPlayers[winColor] || (winColor === 'w' ? 'الأبيض' : 'الأسود');
-                $('#gameStatus').html(`🏳️ انسحب اللاعب <b>${data.loserName}</b>.<br>🏆 الفائز هو: <b>${winnerName}</b>! الجيم انتهى.`);
+                $('#gameStatus').html(`🏳️ انسحب اللاعب <b>${roomData.loserName}</b>.<br>🏆 الفائز هو: <b>${winnerName}</b>!`);
+                return;
+            }
+            if (roomData.gameOverByTime) {
+                gameEnded = true; const winColor = roomData.winnerColor;
+                const winnerName = roomPlayers[winColor] || (winColor === 'w' ? 'الأبيض' : 'الأسود');
+                const loserName = roomPlayers[roomData.loserColor] || (roomData.loserColor === 'w' ? 'الأبيض' : 'الأسود');
+                $('#gameStatus').html(`⏰ الوقت انتهى! اللاعب <b>${loserName}</b> خسر.<br>🏆 الفائز هو: <b>${winnerName}</b>!`);
                 return;
             }
 
-            if(data.fen !== game.fen()) {
-                playSound(data.lastMoveWasCapture);
-                game.load(data.fen);
-                board.position(game.fen());
+            if(roomData.fen !== game.fen()) {
+                playSound(roomData.lastMoveWasCapture);
+                game.load(roomData.fen); board.position(game.fen());
             }
             
-            updateStatus();
-            updateCapturedPieces(); 
+            updateStatus(); updateCapturedPieces(); 
         });
+    }
+
+    function setupPlayerBars() {
+        const topColor = (myColor === 'b') ? 'w' : 'b';
+        const bottomColor = (myColor === 'b') ? 'b' : 'w';
+        $('#topName').text(roomPlayers[topColor] || (topColor === 'w' ? 'اللاعب الأبيض (في الانتظار)' : 'اللاعب الأسود (في الانتظار)'));
+        $('#bottomName').text(roomPlayers[bottomColor] || (bottomColor === 'w' ? 'أنت (الأبيض)' : 'أنت (الأسود)'));
     }
 
     function updateStatus() {
-        if (gameEndedByResign) return;
-        
-        let statusText = '';
+        if (gameEnded) return;
         let turnColor = game.turn();
-        
         let currentTurnName = roomPlayers[turnColor] || (turnColor === 'w' ? 'الأبيض' : 'الأسود');
-        let opponentColor = turnColor === 'w' ? 'b' : 'w';
-        let opponentName = roomPlayers[opponentColor] || (opponentColor === 'w' ? 'الأبيض' : 'الأسود');
+        let opponentName = roomPlayers[turnColor === 'w' ? 'b' : 'w'] || (turnColor === 'w' ? 'الأسود' : 'الأبيض');
 
         if (game.in_checkmate()) {
-            statusText = `كش مات! اللاعب <b>${opponentName}</b> فاز بالجيم! 🏆`;
+            gameEnded = true; $('#gameStatus').html(`كش مات! اللاعب <b>${opponentName}</b> فاز بالجيم! 🏆`);
         } else if (game.in_draw()) {
-            statusText = 'انتهت المباراة بالتعادل!';
+            gameEnded = true; $('#gameStatus').html('انتهت المباراة بالتعادل!');
         } else {
-            statusText = `دور اللاعب: <b>${currentTurnName}</b>`;
-            if (game.in_check()) statusText += ' (كش ملك! ⚠️)';
+            let statusText = `دور اللاعب: <b>${currentTurnName}</b>`;
+            if (game.in_check()) statusText += ' <span style="color:red;">(كش ملك! ⚠️)</span>';
+            $('#gameStatus').html(statusText);
         }
-        $('#gameStatus').html(statusText);
     }
 
     function updateCapturedPieces() {
-        const originalCounts = {
-            'w': { 'p': 8, 'n': 2, 'b': 2, 'r': 2, 'q': 1 },
-            'b': { 'p': 8, 'n': 2, 'b': 2, 'r': 2, 'q': 1 }
-        };
-
+        const orig = { 'w': { 'p': 8, 'n': 2, 'b': 2, 'r': 2, 'q': 1 }, 'b': { 'p': 8, 'n': 2, 'b': 2, 'r': 2, 'q': 1 } };
         const currentBoard = game.board().flat().filter(p => p !== null);
-        
-        currentBoard.forEach(p => {
-            originalCounts[p.color][p.type]--;
-        });
+        currentBoard.forEach(p => { orig[p.color][p.type]--; });
 
-        const pieceOrder = ['q', 'r', 'b', 'n', 'p'];
+        const topColor = (myColor === 'b') ? 'w' : 'b';
+        const bottomColor = (myColor === 'b') ? 'b' : 'w';
 
-        function renderPieces(color, containerId) {
-            const container = $(containerId);
-            container.empty();
-            
-            pieceOrder.forEach(type => {
-                const missingCount = originalCounts[color][type];
-                for (let i = 0; i < missingCount; i++) {
-                    const imgUrl = getPieceImg(color + type.toUpperCase());
-                    container.append(`<img src="${imgUrl}" alt="${type}">`);
+        function render(color, containerId) {
+            const container = $(containerId); container.empty();
+            ['q', 'r', 'b', 'n', 'p'].forEach(type => {
+                for (let i = 0; i < orig[color][type]; i++) {
+                    container.append(`<img src="${getPieceImg(color + type.toUpperCase())}" alt="${type}">`);
                 }
             });
         }
-
-        renderPieces('w', '#captured-w');
-        renderPieces('b', '#captured-b');
+        render(topColor, '#captured-top'); render(bottomColor, '#captured-bottom');
     }
 
-    // إعدادات الشات المباشر
+    // منطق التايمر المحلي (بيشتغل كل ربع ثانية عشان السلاسة)
+    function formatTime(seconds) {
+        if(seconds <= 0) return "00:00";
+        const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60);
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function triggerTimeout(color) {
+        if(timeoutTriggered || isSpectator) return;
+        timeoutTriggered = true;
+        const winner = color === 'w' ? 'b' : 'w';
+        dbRef.update({ gameOverByTime: true, loserColor: color, winnerColor: winner });
+    }
+
+    function startClientTimerLoop() {
+        setInterval(() => {
+            if (!roomData || gameEnded || game.game_over()) return;
+
+            // حساب وقت المباراة الكلي
+            if (roomData.gameStartTime) {
+                const totalElapsed = Math.max(0, (getServerTime() - roomData.gameStartTime) / 1000);
+                $('#totalGameTimer').text('⏱️ وقت المباراة الكلي: ' + formatTime(totalElapsed));
+            }
+
+            if (!roomData.timerStarted) {
+                updateTimerDisplay(roomData.wTime, roomData.bTime); return;
+            }
+
+            let currentW = roomData.wTime;
+            let currentB = roomData.bTime;
+            const elapsed = Math.max(0, (getServerTime() - roomData.lastMoveAt) / 1000);
+
+            if (roomData.turn === 'w') currentW -= elapsed;
+            else currentB -= elapsed;
+
+            if (currentW <= 0) { currentW = 0; triggerTimeout('w'); }
+            if (currentB <= 0) { currentB = 0; triggerTimeout('b'); }
+
+            updateTimerDisplay(currentW, currentB);
+        }, 250);
+    }
+
+    function updateTimerDisplay(wTime, bTime) {
+        const topColor = (myColor === 'b') ? 'w' : 'b';
+        const bottomColor = (myColor === 'b') ? 'b' : 'w';
+        
+        const topTime = topColor === 'w' ? wTime : bTime;
+        const bottomTime = bottomColor === 'w' ? wTime : bTime;
+
+        $('#topTimer').text(formatTime(topTime));
+        $('#bottomTimer').text(formatTime(bottomTime));
+
+        // تأثيرات بصرية للتايمر
+        if(roomData.turn === topColor) { $('#topTimer').css('opacity', '1'); $('#bottomTimer').css('opacity', '0.5'); }
+        else { $('#bottomTimer').css('opacity', '1'); $('#topTimer').css('opacity', '0.5'); }
+
+        if(topTime < 60 && topTime > 0) $('#topTimer').addClass('timer-warning'); else $('#topTimer').removeClass('timer-warning');
+        if(bottomTime < 60 && bottomTime > 0) $('#bottomTimer').addClass('timer-warning'); else $('#bottomTimer').removeClass('timer-warning');
+    }
+
     function setupChat() {
         const chatRef = dbRef.child('chat');
-
-        // استقبال الرسايل
         chatRef.on('child_added', snapshot => {
             const msg = snapshot.val();
-            const isMe = msg.sender === myName;
-            
-            const msgDiv = $('<div>')
-                .addClass('chat-message')
-                .addClass(isMe ? 'me' : '')
-                .html(`<strong>${msg.sender}:</strong> ${msg.text}`);
-            
+            const msgDiv = $('<div>').addClass('chat-message').addClass(msg.sender === myName ? 'me' : '').html(`<strong>${msg.sender}:</strong> ${msg.text}`);
             $('#chatMessages').append(msgDiv);
-            
-            // سكرول لتحت تلقائي لما تيجي رسالة جديدة
-            const chatBox = document.getElementById('chatMessages');
-            chatBox.scrollTop = chatBox.scrollHeight;
+            const chatBox = document.getElementById('chatMessages'); chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        // دالة إرسال الرسالة
-        function sendMessage() {
+        function sendMsg() {
             const text = $('#chatInput').val().trim();
-            if (text) {
-                chatRef.push({
-                    sender: myName,
-                    text: text,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-                $('#chatInput').val(''); // تفريغ الخانة بعد الإرسال
-            }
+            if (text) { chatRef.push({ sender: myName, text: text, timestamp: firebase.database.ServerValue.TIMESTAMP }); $('#chatInput').val(''); }
         }
-
-        // إرسال بالضغط على الزرار
-        $('#sendMsgBtn').click(sendMessage);
-
-        // إرسال بالضغط على زرار Enter
-        $('#chatInput').keypress(function(e) {
-            if (e.which === 13) {
-                sendMessage();
-            }
-        });
+        $('#sendMsgBtn').click(sendMsg);
+        $('#chatInput').keypress(e => { if (e.which === 13) sendMsg(); });
     }
 </script>
 
